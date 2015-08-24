@@ -9,7 +9,6 @@ hello bootstrap table
          data-url="/api/v1/bookmarks/"
          data-pagination="true"
          data-side-pagination="server"
-         data-show-pagination-switch="true"
          data-page-list="[10, 25, 50, 100]"
          data-search="true">
     <thead>
@@ -25,16 +24,16 @@ hello bootstrap table
 {% endblock %}
 {% block script %}
 <script>
-var $table = $('#table');
-
-$(function() {
-  $table.bootstrapTable({
-    height: calcHeight()
-  });
-});
-
-function calcHeight() {
-  return $(window).height() - 100px;
-}
+//var $table = $('#table');
+//
+//$(function() {
+//  $table.bootstrapTable({
+//    height: calcHeight()
+//  });
+//});
+//
+//function calcHeight() {
+//  return $(window).height() - 100px;
+//}
 </script>
 {% endblock %}
