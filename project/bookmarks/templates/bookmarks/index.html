@@ -2,30 +2,38 @@
 {% block title %}bootstrap table example{% endblock %}
 {% block content %}
 hello bootstrap table
-<table data-toggle="table">
-    <thead>
-        <tr>
-            <th>Item ID</th>
-            <th>Item Name</th>
-            <th>Item Price</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>1</td>
-            <td>Item 1</td>
-            <td>$1</td>
-        </tr>
-        <tr>
-            <td>2</td>
-            <td>Item 2</td>
-            <td>$2</td>
-        </tr>
-    </tbody>
-</table>
 
+<div class="container">
+  <table id="table"
+         data-toggle="table"
+         data-url="/api/v1/bookmarks/"
+         data-side-pagination="server"
+         data-pagination="true"
+         data-page-list="[10, 25, 50, 100]"
+         data-search="true">
+    <thead>
+      <tr>
+        <th data-field="id">ID</th>
+        <th data-field="title">Title</th>
+        <th data-field="url">URL</th>
+        <th data-field="bookmarked_at">Bookmarked At</th>
+      </tr>
+    </thead>
+  </table>
+</div>
 {% endblock %}
 {% block script %}
 <script>
+var $table = $('#table');
+
+$(function() {
+  $table.bootstrapTable({
+    height: calcHeight()
+  });
+});
+
+function calcHeight() {
+  return $(window).height();
+}
 </script>
 {% endblock %}
