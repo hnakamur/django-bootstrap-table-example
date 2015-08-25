@@ -111,3 +111,147 @@ var DeleteBookmarkDialog = {
 };
 
 m.mount(document.getElementById('componentContainer'), BookmarksPage);
+
+var $table = $('#table');
+
+function addSortOptions(options) {
+  var uri = new URI(),
+      paramsInURI = uri.query(true),
+      sort = paramsInURI.sort,
+      order = paramsInURI.order;
+  if ($.inArray(sort, ['id', 'url', 'title', 'bookmarked_at']) !== -1) {
+    options.sortName = sort;
+  }
+  if ($.inArray(order, ['asc', 'desc']) !== -1) {
+    options.sortOrder = order;
+  }
+  return options;
+}
+
+$table.bootstrapTable(addSortOptions({
+  onCheck: function() {
+    $('#deleteButton').removeClass('disabled');
+  }
+}));
+
+function saveBrowserHistory(params) {
+  var uri = new URI(),
+      newURL;
+  uri.query(params);
+  newURL = '' + uri;
+  if (newURL !== window.location.href) {
+    window.history.pushState(undefined, document.title, '' + uri);
+  }
+  return params;
+}
+
+$('#addButton').on('click', function(e) {
+  $('#addDialogURL').val('');
+  $('#addDialogTitle').val('');
+});
+
+$('#addDialogAddButton').on('click', function(e) {
+  var apiURL = '/api/v1/bookmarks/',
+      url = $('#addDialogURL').val(),
+      title = $('#addDialogTitle').val();
+  $.ajax({
+    url: apiURL,
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': $.cookie('csrftoken')
+    },
+    data: {
+      url: url,
+      title: title
+    }
+  })
+  .done(function(data, textStatus, jqXHR) {
+    $('#addDialog').modal('hide');
+    showSuccessFlashMessage('ブックマークが登録されました');
+    refreshTable();
+  })
+  .fail(function(jqXHR, textStatus, errorThrown) {
+    showErrorInDialog('addDialog', jqXHR);
+  });
+})
+
+$('#deleteButton').on('click', function(e) {
+  var row = getSelectedRow();
+  $('#deleteDialogBookmarkURL').html(row.url);
+  $('#deleteDialogBookmarkTitle').html(row.title);
+});
+
+$('#deleteDialogDeleteButton').on('click', function(e) {
+  var row = getSelectedRow();
+  var apiURL= '/api/v1/bookmarks/' + row.id + '/';
+  $.ajax({
+    url: apiURL,
+    method: 'DELETE',
+    headers: {
+      'X-CSRFToken': $.cookie('csrftoken')
+    },
+  })
+  .done(function(data, textStatus, jqXHR) {
+    $('#deleteDialog').modal('hide');
+    deleteSelectedRows();
+  })
+  .fail(function(jqXHR, textStatus, errorThrown) {
+    showErrorInDialog('deleteDialog', jqXHR);
+  });
+});
+
+function showSuccessFlashMessage(message) {
+  $('#alerts').prepend(
+    '<div class="alert alert-success" role="alert">' + message + '</div>'
+  );
+  setTimeout(function() {
+    $('#alerts').empty();
+  }, 5000);
+}
+
+function showErrorInDialog(dialogID, jqXHR) {
+  var message = jqXHR.responseJSON ? jqXHR.responseJSON.errors[0].title : jqXHR.statusText;
+  $('#' + dialogID + ' .alerts-container').prepend(
+    '<div class="alert alert-danger" role="alert">' + message + '</div>'
+  );
+  $('#' + dialogID).one('hidden.bs.modal', function() {
+    $('#' + dialogID + ' .alerts-container').empty();
+  });
+}
+
+function refreshTable() {
+  $table.bootstrapTable('refresh');
+  $('#deleteButton').addClass('disabled');
+}
+
+function getSelectedRow() {
+  return $table.bootstrapTable('getSelections')[0];
+}
+
+function deleteSelectedRows() {
+  var ids = $.map($table.bootstrapTable('getSelections'), function (row) {
+    return row.id;
+  });
+  $table.bootstrapTable('remove', {
+    field: 'id',
+    values: ids
+  });
+}
+
+function urlFormatter(value) {
+  if (/^https?:\/\//.test(value)) {
+    return '<a href="' + value + '" target="_blank">' + value + '</a>';
+  } else if (/^smb:\/\//.test(value)) {
+    return value.substr('smb:'.length).replace(/\//g, '\\');
+  } else {
+    return value;
+  }
+}
+function datetimeFormatter(value) {
+  var dt = new Date(Date.parse(value));
+  return dt.getFullYear() + '/' + format2digit(dt.getMonth() + 1) + '/' + format2digit(dt.getDay()) + ' ' +
+    format2digit(dt.getHours()) + ':' + format2digit(dt.getMinutes()) + ':' + format2digit(dt.getSeconds());
+}
+function format2digit(value) {
+  return value < 10 ? '0' + value : '' + value;
+}
