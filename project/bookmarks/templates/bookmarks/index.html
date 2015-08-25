@@ -7,16 +7,18 @@ hello bootstrap table
   <table id="table"
          data-toggle="table"
          data-url="/api/v1/bookmarks/"
+         data-show-columns="true"
          data-pagination="true"
          data-side-pagination="server"
          data-page-list="[10, 25, 50, 100]"
-         data-search="true">
+         data-search="true"
+         data-resizable="true">
     <thead>
       <tr>
-        <th data-field="id" class="bookmarks-table-id-column">ID</th>
-        <th data-field="title" class="bookmarks-table-title-column">Title</th>
-        <th data-field="url" class="bookmarks-table-url-column">URL</th>
-        <th data-field="bookmarked_at" class="bookmarks-table-bookmarked-at-column">Bookmarked At</th>
+        <th data-field="id" data-sortable="true" class="bookmarks-table-id-column">ID</th>
+        <th data-field="title" data-sortable="true" class="bookmarks-table-title-column">Title</th>
+        <th data-field="url" data-sortable="true" class="bookmarks-table-url-column">URL</th>
+        <th data-field="bookmarked_at" data-sortable="true" class="bookmarks-table-bookmarked-at-column">Bookmarked At</th>
       </tr>
     </thead>
   </table>
