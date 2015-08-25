@@ -1,3 +1,6 @@
+.bookmarks-table {
+  table-layout: fixed;
+}
 .bookmarks-table-id-column {
   width: 5%;
 }
@@ -9,4 +12,7 @@
 }
 .bookmarks-table-bookmarked-at-column {
   width: 10%;
+}
+.bookmarks-table td {
+  word-wrap: break-word;
 }

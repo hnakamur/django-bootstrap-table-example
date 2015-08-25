@@ -5,18 +5,24 @@ hello bootstrap table
 
 <div class="container">
   <table id="table"
+         class="bookmarks-table"
          data-toggle="table"
          data-url="/api/v1/bookmarks/"
+         data-show-columns="true"
          data-pagination="true"
          data-side-pagination="server"
          data-page-list="[10, 25, 50, 100]"
          data-search="true">
+    <col class="bookmarks-table-id-column"/>
+    <col class="bookmarks-table-title-column"/>
+    <col class="bookmarks-table-url-column"/>
+    <col class="bookmarks-table-bookmarked-at-column"/>
     <thead>
       <tr>
-        <th data-field="id" class="bookmarks-table-id-column">ID</th>
-        <th data-field="title" class="bookmarks-table-title-column">Title</th>
-        <th data-field="url" class="bookmarks-table-url-column">URL</th>
-        <th data-field="bookmarked_at" class="bookmarks-table-bookmarked-at-column">Bookmarked At</th>
+        <th data-field="id" data-sortable="true">ID</th>
+        <th data-field="title" data-sortable="true">Title</th>
+        <th data-field="url" data-sortable="true">URL</th>
+        <th data-field="bookmarked_at" data-sortable="true">Bookmarked At</th>
       </tr>
     </thead>
   </table>
