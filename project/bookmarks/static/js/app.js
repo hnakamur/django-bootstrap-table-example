@@ -125,7 +125,12 @@ var BookmarksTable = {
     PubSub.subscribe('BookmarksTable.deleteSelectedRow', this.deleteSelectedRow);
   },
   view: function(ctrl, args) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-page-list='[10, 25, 50, 100]'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-url='/api/v1/bookmarks/']", { 'data-toolbar': '#' + args.toolbar_dom_id, config: ctrl.configTable }, [
+    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-url='/api/v1/bookmarks/']",
+        {
+          'data-toolbar': '#' + args.toolbar_dom_id,
+          'data-page-list': '[10, 25, 50, 100]',
+          config: ctrl.configTable
+        }, [
       m("colgroup", [
         m("col.bookmarks-table-select-column"),
         m("col.bookmarks-table-id-column"),
