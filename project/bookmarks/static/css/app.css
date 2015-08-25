@@ -1,0 +1,12 @@
+.bookmarks-table-id-column {
+  width: 5%;
+}
+.bookmarks-table-title-column {
+  width: 45%;
+}
+.bookmarks-table-url-column {
+  width: 40%;
+}
+.bookmarks-table-bookmarked-at-column {
+  width: 10%;
+}
