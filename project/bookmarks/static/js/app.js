@@ -59,8 +59,12 @@ var Toolbar = {
       deleteButtonAttrs['class'] = 'disabled';
     }
     return m("[id='toolbar']", [
-      m("button.btn.btn-default[data-toggle='modal']", { onclick: ctrl.onClickAddButton }, "追加"),
-      m("button.btn.btn-default[data-toggle='modal']", deleteButtonAttrs, "削除")
+      m(".btn-group",
+        m("button.btn.btn-default[data-toggle='modal']", { onclick: ctrl.onClickAddButton }, "追加")
+      ),
+      m(".btn-group",
+        m("button.btn.btn-default[data-toggle='modal']", deleteButtonAttrs, "削除")
+      )
     ]);
   }
 };
