@@ -6,8 +6,10 @@ hello bootstrap table
 <div class="container">
   <table id="table"
          class="bookmarks-table"
+         data-striped="true"
          data-toggle="table"
          data-url="/api/v1/bookmarks/"
+         data-show-toggle="true"
          data-show-columns="true"
          data-pagination="true"
          data-side-pagination="server"
@@ -21,8 +23,8 @@ hello bootstrap table
       <tr>
         <th data-field="id" data-sortable="true">ID</th>
         <th data-field="title" data-sortable="true">Title</th>
-        <th data-field="url" data-sortable="true">URL</th>
-        <th data-field="bookmarked_at" data-sortable="true">Bookmarked At</th>
+        <th data-field="url" data-sortable="true" data-formatter="urlFormatter">URL</th>
+        <th data-field="bookmarked_at" data-sortable="true" data-formatter="datetimeFormatter">Bookmarked At</th>
       </tr>
     </thead>
   </table>
@@ -30,16 +32,16 @@ hello bootstrap table
 {% endblock %}
 {% block script %}
 <script>
-//var $table = $('#table');
-//
-//$(function() {
-//  $table.bootstrapTable({
-//    height: calcHeight()
-//  });
-//});
-//
-//function calcHeight() {
-//  return $(window).height() - 100px;
-//}
+function urlFormatter(value) {
+  return /^https?:\/\//.test(value) ? '<a href="' + value + '" target="_blank">' + value + '</a>' : value;
+}
+function datetimeFormatter(value) {
+  var dt = new Date(Date.parse(value));
+  return dt.getFullYear() + '/' + format2digit(dt.getMonth() + 1) + '/' + format2digit(dt.getDay()) + ' ' +
+    format2digit(dt.getHours()) + ':' + format2digit(dt.getMinutes()) + ':' + format2digit(dt.getSeconds());
+}
+function format2digit(value) {
+  return value < 10 ? '0' + value : '' + value;
+}
 </script>
 {% endblock %}

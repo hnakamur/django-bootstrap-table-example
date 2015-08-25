@@ -5,13 +5,13 @@
   width: 5%;
 }
 .bookmarks-table-title-column {
-  width: 45%;
+  width: 40%;
 }
 .bookmarks-table-url-column {
   width: 40%;
 }
 .bookmarks-table-bookmarked-at-column {
-  width: 10%;
+  width: 15%;
 }
 .bookmarks-table td {
   word-wrap: break-word;
