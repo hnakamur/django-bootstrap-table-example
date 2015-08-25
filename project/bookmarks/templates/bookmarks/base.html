@@ -9,14 +9,15 @@
     <link rel="stylesheet" href="{% static "css/bootstrap-theme.min.css" %}">
     <link rel="stylesheet" href="{% static "css/bootstrap-table.min.css" %}">
     <link rel="stylesheet" href="{% static "css/app.css" %}">
+  </head>
+  <body>
+    {% block content %}{% endblock %}
     <script src="{% static "js/jquery.min.js" %}"></script>
     <script src="{% static "js/jquery.cookie.js" %}"></script>
     <script src="{% static "js/bootstrap.min.js" %}"></script>
     <script src="{% static "js/bootstrap-table.js" %}"></script>
     <script src="{% static "js/bootstrap-table-ja-JP.min.js" %}"></script>
-  </head>
-  <body>
-    {% block content %}{% endblock %}
+    <script src="{% static "js/URI.js" %}"></script>
     {% block script %}{% endblock %}
   </body>
 </html>

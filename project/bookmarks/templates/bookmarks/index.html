@@ -19,6 +19,7 @@
          data-show-columns="true"
          data-pagination="true"
          data-side-pagination="server"
+         data-query-params="saveBrowserHistory"
          data-page-list="[10, 25, 50, 100]"
          data-search="true">
     <col class="bookmarks-table-select-column"/>
@@ -89,11 +90,38 @@
 {% block script %}
 <script>
 var $table = $('#table');
-$table.bootstrapTable({
+
+function addSortOptions(options) {
+  var uri = new URI(),
+      paramsInURI = uri.query(true),
+      sort = paramsInURI.sort,
+      order = paramsInURI.order;
+  if ($.inArray(sort, ['id', 'url', 'title', 'bookmarked_at']) !== -1) {
+    options.sortName = sort;
+  }
+  if ($.inArray(order, ['asc', 'desc']) !== -1) {
+    options.sortOrder = order;
+  }
+  console.log('options', options);
+  return options;
+}
+
+$table.bootstrapTable(addSortOptions({
   onCheck: function() {
     $('#deleteButton').removeClass('disabled');
   }
-});
+}));
+
+function saveBrowserHistory(params) {
+  var uri = new URI(),
+      newURL;
+  uri.query(params);
+  newURL = '' + uri;
+  if (newURL !== window.location.href) {
+    window.history.pushState(undefined, document.title, '' + uri);
+  }
+  return params;
+}
 
 $('#addButton').on('click', function(e) {
   $('#addDialogURL').val('');
