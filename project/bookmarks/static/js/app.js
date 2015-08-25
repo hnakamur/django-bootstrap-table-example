@@ -1,12 +1,14 @@
 var BookmarksPage = {
   controller: function() {
+    // NOTE: toolbar_dom_id is constant so we use a plain string instead of m.prop().
+    this.toolbar_dom_id = 'toolbar1';
     this.selectedRow = m.prop({});
   },
   view: function(ctrl) {
     return [
       m.component(AlertPanel),
-      m.component(Toolbar, { selectedRow: ctrl.selectedRow }),
-      m.component(BookmarksTable, { selectedRow: ctrl.selectedRow }),
+      m.component(Toolbar, { toolbar_dom_id: ctrl.toolbar_dom_id, selectedRow: ctrl.selectedRow }),
+      m.component(BookmarksTable, { toolbar_dom_id: ctrl.toolbar_dom_id, selectedRow: ctrl.selectedRow }),
       m.component(AddBookmarkDialog),
       m.component(DeleteBookmarkDialog)
     ];
@@ -53,12 +55,12 @@ var Toolbar = {
       });
     };
   },
-  view: function(ctrl) {
+  view: function(ctrl, args) {
     var deleteButtonAttrs = { onclick: ctrl.onClickDeleteButton };
     if (ctrl.selectedRow().id === undefined) {
       deleteButtonAttrs['class'] = 'disabled';
     }
-    return m("[id='toolbar']", [
+    return m("", { id: args.toolbar_dom_id }, [
       m(".btn-group",
         m("button.btn.btn-default[data-toggle='modal']", { onclick: ctrl.onClickAddButton }, "追加")
       ),
@@ -122,8 +124,8 @@ var BookmarksTable = {
     }
     PubSub.subscribe('BookmarksTable.deleteSelectedRow', this.deleteSelectedRow);
   },
-  view: function(ctrl) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-page-list='[10, 25, 50, 100]'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-toolbar='#toolbar'][data-url='/api/v1/bookmarks/'][id='table']", { config: ctrl.configTable }, [
+  view: function(ctrl, args) {
+    return m("table.bookmarks-table[data-click-to-select='true'][data-page-list='[10, 25, 50, 100]'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-url='/api/v1/bookmarks/']", { 'data-toolbar': '#' + args.toolbar_dom_id, config: ctrl.configTable }, [
       m("colgroup", [
         m("col.bookmarks-table-select-column"),
         m("col.bookmarks-table-id-column"),
