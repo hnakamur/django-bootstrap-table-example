@@ -3,6 +3,8 @@
 {% block content %}
 <h1>Bookmarks</h1>
 <div class="container">
+  <div id="alerts">
+  </div>
   <div id="toolbar">
     <button id="addButton" class="btn btn-default" data-toggle="modal" data-target="#addDialog">追加</button>
     <button id="deleteButton" class="btn btn-default disabled" data-toggle="modal" data-target="#deleteDialog">削除</button>
@@ -111,6 +113,7 @@ $('#addDialogAddButton').on('click', function(e) {
   })
   .done(function(data, textStatus, jqXHR) {
     $('#addDialog').modal('hide');
+    showSuccessFlashMessage('ブックマークが登録されました');
     refreshTable();
   })
   .fail(function(jqXHR, textStatus, errorThrown) {
@@ -139,6 +142,15 @@ $('#deleteDialogDeleteButton').on('click', function(e) {
     showErrorInDialog('deleteDialog', jqXHR);
   });
 });
+
+function showSuccessFlashMessage(message) {
+  $('#alerts').prepend(
+    '<div class="alert alert-success" role="alert">' + message + '</div>'
+  );
+  setTimeout(function() {
+    $('#alerts').empty();
+  }, 5000);
+}
 
 function showErrorInDialog(dialogID, jqXHR) {
   var errors = jqXHR.responseJSON.errors;
