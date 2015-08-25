@@ -14,8 +14,26 @@ var BookmarksPage = {
 };
 
 var AlertPanel = {
+  controller: function() {
+    var ctrl = this;
+    this.message = m.prop('');
+    this.visible = m.prop(false);
+    this.showSuccessFlashMessage = function(msg, data) {
+      ctrl.message(data.message);
+      ctrl.visible(true);
+      m.redraw();
+      setTimeout(function() {
+        ctrl.visible(false);
+        m.redraw();
+      }, 5000);
+    };
+    PubSub.subscribe('BookmarksTable.showSuccessFlashMessage', this.showSuccessFlashMessage);
+  },
   view: function(ctrl) {
-    return m("[id='alerts']");
+    return m("[id='alerts']", [
+      ctrl.visible() ?
+        m(".alert.alert-success[role='alert']", ctrl.message()) : ''
+    ]);
   }
 };
 
@@ -39,7 +57,7 @@ var Toolbar = {
 var BookmarksTable = {
   controller: function() {
     var ctrl = this;
-    this.configDialog = function(elem, isInitialized, context) {
+    this.config = function(elem, isInitialized, context) {
       if (!isInitialized) {
         ctrl.tableElem = elem;
       }
@@ -100,7 +118,6 @@ var AddBookmarkDialog = {
     this.title = m.prop('');
     this.configDialog = function(elem, isInitialized, context) {
       if (!isInitialized) {
-        console.log('addBookmarkElem. elem=', elem);
         ctrl.dialogElem = elem;
       }
     };
@@ -113,11 +130,11 @@ var AddBookmarkDialog = {
       $(ctrl.dialogElem).modal('hide');
     };
     this.onClickAddButton = function() {
-      console.log('onClickAddButton. url=', ctrl.url(), ', title=', ctrl.title());
       API.addBookmark(ctrl.url(), ctrl.title())
         .then(ctrl.hide)
         .then(function() {
-          PubSub.publishSync('BookmarksTable.refresh');
+          PubSub.publish('BookmarksTable.showSuccessFlashMessage', {message: 'ブックマークを登録しました'});
+          PubSub.publish('BookmarksTable.refresh');
         });
     };
     PubSub.subscribe('AddBookmarkDialog.show', this.show);
@@ -220,31 +237,6 @@ function saveBrowserHistory(params) {
   return params;
 }
 
-//$('#addDialogAddButton').on('click', function(e) {
-//  var apiURL = '/api/v1/bookmarks/',
-//      url = $('#addDialogURL').val(),
-//      title = $('#addDialogTitle').val();
-//  $.ajax({
-//    url: apiURL,
-//    method: 'POST',
-//    headers: {
-//      'X-CSRFToken': $.cookie('csrftoken')
-//    },
-//    data: {
-//      url: url,
-//      title: title
-//    }
-//  })
-//  .done(function(data, textStatus, jqXHR) {
-//    $('#addDialog').modal('hide');
-//    showSuccessFlashMessage('ブックマークが登録されました');
-//    refreshTable();
-//  })
-//  .fail(function(jqXHR, textStatus, errorThrown) {
-//    showErrorInDialog('addDialog', jqXHR);
-//  });
-//})
-
 $('#deleteButton').on('click', function(e) {
   var row = getSelectedRow();
   $('#deleteDialogBookmarkURL').html(row.url);
@@ -269,15 +261,6 @@ $('#deleteDialogDeleteButton').on('click', function(e) {
     showErrorInDialog('deleteDialog', jqXHR);
   });
 });
-
-function showSuccessFlashMessage(message) {
-  $('#alerts').prepend(
-    '<div class="alert alert-success" role="alert">' + message + '</div>'
-  );
-  setTimeout(function() {
-    $('#alerts').empty();
-  }, 5000);
-}
 
 function showErrorInDialog(dialogID, jqXHR) {
   var message = jqXHR.responseJSON ? jqXHR.responseJSON.errors[0].title : jqXHR.statusText;
