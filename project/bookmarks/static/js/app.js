@@ -1,10 +1,13 @@
 var BookmarksPage = {
+  controller: function() {
+
+  },
   view: function(ctrl) {
     return [
       m.component(AlertPanel),
       m.component(Toolbar),
       m.component(BookmarksTable),
-      m.component(RegisterBookmarkDialog),
+      m.component(AddBookmarkDialog),
       m.component(DeleteBookmarkDialog)
     ];
   }
@@ -17,17 +20,38 @@ var AlertPanel = {
 };
 
 var Toolbar = {
+  controller: function() {
+    this.onClickAddButton = function() {
+      PubSub.publishSync('AddBookmarkDialog.show');
+    };
+    this.onClickDeleteButton = function() {
+      console.log('onClickDeleteButton');
+    };
+  },
   view: function(ctrl) {
     return m("[id='toolbar']", [
-      m("button.btn.btn-default[data-target='#addDialog'][data-toggle='modal'][id='addButton']", "追加"),
-      m("button.btn.btn-default.disabled[data-target='#deleteDialog'][data-toggle='modal'][id='deleteButton']", "削除")
+      m("button.btn.btn-default[data-toggle='modal'][id='addButton']", {onclick: ctrl.onClickAddButton}, "追加"),
+      m("button.btn.btn-default.disabled[data-target='#deleteDialog'][data-toggle='modal'][id='deleteButton']", {onclick: ctrl.onClickDelete}, "削除")
     ]);
   }
 };
 
 var BookmarksTable = {
+  controller: function() {
+    var ctrl = this;
+    this.configDialog = function(elem, isInitialized, context) {
+      if (!isInitialized) {
+        ctrl.tableElem = elem;
+      }
+    };
+    this.refresh = function() {
+      $(ctrl.tableElem).bootstrapTable('refresh');
+      $('#deleteButton').addClass('disabled');
+    };
+    PubSub.subscribe('BookmarksTable.refresh', this.refresh);
+  },
   view: function(ctrl) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-page-list='[10, 25, 50, 100]'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-toolbar='#toolbar'][data-url='/api/v1/bookmarks/'][id='table']", [
+    return m("table.bookmarks-table[data-click-to-select='true'][data-page-list='[10, 25, 50, 100]'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-toolbar='#toolbar'][data-url='/api/v1/bookmarks/'][id='table']", {config: ctrl.config}, [
       m("colgroup", [
         m("col.bookmarks-table-select-column"),
         m("col.bookmarks-table-id-column"),
@@ -48,9 +72,58 @@ var BookmarksTable = {
   }
 };
 
-var RegisterBookmarkDialog = {
+var API = {
+  addBookmark: function(url, title) {
+    var apiURL = '/api/v1/bookmarks/',
+        data = {
+          url: url,
+          title: title
+        },
+        xhrConfig = function(xhr) {
+          xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
+          xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        };
+    return m.request({
+      method: 'POST',
+      url: apiURL,
+      data: data,
+      config: xhrConfig,
+      serialize: $.param
+    });
+  }
+};
+
+var AddBookmarkDialog = {
+  controller: function() {
+    var ctrl = this;
+    this.url = m.prop('');
+    this.title = m.prop('');
+    this.configDialog = function(elem, isInitialized, context) {
+      if (!isInitialized) {
+        console.log('addBookmarkElem. elem=', elem);
+        ctrl.dialogElem = elem;
+      }
+    };
+    this.show = function() {
+      ctrl.url('');
+      ctrl.title('');
+      $(ctrl.dialogElem).modal('show');
+    };
+    this.hide = function() {
+      $(ctrl.dialogElem).modal('hide');
+    };
+    this.onClickAddButton = function() {
+      console.log('onClickAddButton. url=', ctrl.url(), ', title=', ctrl.title());
+      API.addBookmark(ctrl.url(), ctrl.title())
+        .then(ctrl.hide)
+        .then(function() {
+          PubSub.publishSync('BookmarksTable.refresh');
+        });
+    };
+    PubSub.subscribe('AddBookmarkDialog.show', this.show);
+  },
   view: function(ctrl) {
-    return m(".modal.fade[id='addDialog']", [
+    return m(".modal.fade[id='addDialog']", {config: ctrl.configDialog}, [
       m(".modal-dialog", [
         m(".modal-content", [
           m(".modal-header", [
@@ -64,17 +137,19 @@ var RegisterBookmarkDialog = {
             m("form", [
               m(".form-group", [
                 m("label[for='addDialogURL']", "URL"),
-                m("input.form-control[id='addDialogURL'][type='text']")
+                m("input.form-control[type='text'][id='addDialogURL']",
+                  {onchange: m.withAttr('value', ctrl.url), value: ctrl.url()})
               ]),
               m(".form-group", [
                 m("label[for='addDialogTitle']", "タイトル"),
-                m("input.form-control[id='addDialogTitle'][type='text']")
+                m("input.form-control[type='text'][id='addDialogTitle']",
+                  {onchange: m.withAttr('value', ctrl.title), value: ctrl.title()})
               ])
             ])
           ]),
           m(".modal-footer", [
             m("button.btn.btn-default[data-dismiss='modal'][type='button']", "キャンセル"),
-            m("button.btn.btn-primary[id='addDialogAddButton'][type='button']", "追加")
+            m("button.btn.btn-primary[id='addDialogAddButton'][type='button']", {onclick: ctrl.onClickAddButton}, "追加")
           ])
         ])
       ])
@@ -145,35 +220,30 @@ function saveBrowserHistory(params) {
   return params;
 }
 
-$('#addButton').on('click', function(e) {
-  $('#addDialogURL').val('');
-  $('#addDialogTitle').val('');
-});
-
-$('#addDialogAddButton').on('click', function(e) {
-  var apiURL = '/api/v1/bookmarks/',
-      url = $('#addDialogURL').val(),
-      title = $('#addDialogTitle').val();
-  $.ajax({
-    url: apiURL,
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': $.cookie('csrftoken')
-    },
-    data: {
-      url: url,
-      title: title
-    }
-  })
-  .done(function(data, textStatus, jqXHR) {
-    $('#addDialog').modal('hide');
-    showSuccessFlashMessage('ブックマークが登録されました');
-    refreshTable();
-  })
-  .fail(function(jqXHR, textStatus, errorThrown) {
-    showErrorInDialog('addDialog', jqXHR);
-  });
-})
+//$('#addDialogAddButton').on('click', function(e) {
+//  var apiURL = '/api/v1/bookmarks/',
+//      url = $('#addDialogURL').val(),
+//      title = $('#addDialogTitle').val();
+//  $.ajax({
+//    url: apiURL,
+//    method: 'POST',
+//    headers: {
+//      'X-CSRFToken': $.cookie('csrftoken')
+//    },
+//    data: {
+//      url: url,
+//      title: title
+//    }
+//  })
+//  .done(function(data, textStatus, jqXHR) {
+//    $('#addDialog').modal('hide');
+//    showSuccessFlashMessage('ブックマークが登録されました');
+//    refreshTable();
+//  })
+//  .fail(function(jqXHR, textStatus, errorThrown) {
+//    showErrorInDialog('addDialog', jqXHR);
+//  });
+//})
 
 $('#deleteButton').on('click', function(e) {
   var row = getSelectedRow();
