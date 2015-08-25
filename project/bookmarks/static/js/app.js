@@ -1,12 +1,12 @@
 var BookmarksPage = {
   controller: function() {
-
+    this.selectedRow = m.prop({});
   },
   view: function(ctrl) {
     return [
       m.component(AlertPanel),
-      m.component(Toolbar),
-      m.component(BookmarksTable),
+      m.component(Toolbar, { selectedRow: ctrl.selectedRow }),
+      m.component(BookmarksTable, { selectedRow: ctrl.selectedRow }),
       m.component(AddBookmarkDialog),
       m.component(DeleteBookmarkDialog)
     ];
@@ -38,38 +38,88 @@ var AlertPanel = {
 };
 
 var Toolbar = {
-  controller: function() {
+  controller: function(args) {
+    var ctrl = this;
+    this.selectedRow = args.selectedRow;
     this.onClickAddButton = function() {
-      PubSub.publishSync('AddBookmarkDialog.show');
+      PubSub.publish('AddBookmarkDialog.show');
     };
     this.onClickDeleteButton = function() {
-      console.log('onClickDeleteButton');
+      var row = ctrl.selectedRow();
+      PubSub.publish('DeleteBookmarkDialog.show', {
+        id: row.id,
+        url: row.url,
+        title: row.title
+      });
     };
   },
   view: function(ctrl) {
+    var deleteButtonAttrs = { onclick: ctrl.onClickDeleteButton };
+    if (ctrl.selectedRow().id === undefined) {
+      deleteButtonAttrs['class'] = 'disabled';
+    }
     return m("[id='toolbar']", [
-      m("button.btn.btn-default[data-toggle='modal'][id='addButton']", {onclick: ctrl.onClickAddButton}, "追加"),
-      m("button.btn.btn-default.disabled[data-target='#deleteDialog'][data-toggle='modal'][id='deleteButton']", {onclick: ctrl.onClickDelete}, "削除")
+      m("button.btn.btn-default[data-toggle='modal']", { onclick: ctrl.onClickAddButton }, "追加"),
+      m("button.btn.btn-default[data-toggle='modal']", deleteButtonAttrs, "削除")
     ]);
   }
 };
 
 var BookmarksTable = {
-  controller: function() {
+  controller: function(args) {
+    this.selectedRow = args.selectedRow
     var ctrl = this;
-    this.config = function(elem, isInitialized, context) {
+    this.updateSelectedRow = function(row) {
+      ctrl.selectedRow(row);
+      m.redraw();
+    };
+    this.configTable = function(elem, isInitialized, context) {
       if (!isInitialized) {
         ctrl.tableElem = elem;
+
+        function addSortOptions(options) {
+          var uri = new URI(),
+              paramsInURI = uri.query(true),
+              sort = paramsInURI.sort,
+              order = paramsInURI.order;
+          if (['id', 'url', 'title', 'bookmarked_at'].indexOf(sort) !== -1) {
+            options.sortName = sort;
+          }
+          if (['asc', 'desc'].indexOf(order) !== -1) {
+            options.sortOrder = order;
+          }
+          return options;
+        }
+
+        $(ctrl.tableElem).bootstrapTable(addSortOptions({
+          onCheck: function() {
+            var row = $(ctrl.tableElem).bootstrapTable('getSelections')[0];
+            ctrl.updateSelectedRow(row);
+          }
+        }));
       }
     };
+
     this.refresh = function() {
       $(ctrl.tableElem).bootstrapTable('refresh');
-      $('#deleteButton').addClass('disabled');
+      ctrl.updateSelectedRow({});
     };
     PubSub.subscribe('BookmarksTable.refresh', this.refresh);
+
+    this.deleteSelectedRow = function() {
+      var id = ctrl.selectedRow().id;
+      if (id !== undefined) {
+        $(ctrl.tableElem).bootstrapTable('remove', {
+          field: 'id',
+          values: [id]
+        });
+        ctrl.updateSelectedRow({});
+      }
+    }
+    PubSub.subscribe('BookmarksTable.deleteSelectedRow', this.deleteSelectedRow);
   },
   view: function(ctrl) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-page-list='[10, 25, 50, 100]'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-toolbar='#toolbar'][data-url='/api/v1/bookmarks/'][id='table']", {config: ctrl.config}, [
+    return m("table.bookmarks-table[data-click-to-select='true'][data-page-list='[10, 25, 50, 100]'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-toolbar='#toolbar'][data-url='/api/v1/bookmarks/'][id='table']", { config: ctrl.configTable }, [
       m("colgroup", [
         m("col.bookmarks-table-select-column"),
         m("col.bookmarks-table-id-column"),
@@ -104,9 +154,20 @@ var API = {
     return m.request({
       method: 'POST',
       url: apiURL,
-      data: data,
       config: xhrConfig,
+      data: data,
       serialize: $.param
+    });
+  },
+  deleteBookmark: function(id) {
+    var apiURL = '/api/v1/bookmarks/' + id,
+        xhrConfig = function(xhr) {
+          xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
+        };
+    return m.request({
+      method: 'DELETE',
+      url: apiURL,
+      config: xhrConfig
     });
   }
 };
@@ -140,7 +201,7 @@ var AddBookmarkDialog = {
     PubSub.subscribe('AddBookmarkDialog.show', this.show);
   },
   view: function(ctrl) {
-    return m(".modal.fade[id='addDialog']", {config: ctrl.configDialog}, [
+    return m(".modal.fade", { config: ctrl.configDialog }, [
       m(".modal-dialog", [
         m(".modal-content", [
           m(".modal-header", [
@@ -154,19 +215,19 @@ var AddBookmarkDialog = {
             m("form", [
               m(".form-group", [
                 m("label[for='addDialogURL']", "URL"),
-                m("input.form-control[type='text'][id='addDialogURL']",
+                m("input.form-control[type='text']",
                   {onchange: m.withAttr('value', ctrl.url), value: ctrl.url()})
               ]),
               m(".form-group", [
                 m("label[for='addDialogTitle']", "タイトル"),
-                m("input.form-control[type='text'][id='addDialogTitle']",
+                m("input.form-control[type='text']",
                   {onchange: m.withAttr('value', ctrl.title), value: ctrl.title()})
               ])
             ])
           ]),
           m(".modal-footer", [
             m("button.btn.btn-default[data-dismiss='modal'][type='button']", "キャンセル"),
-            m("button.btn.btn-primary[id='addDialogAddButton'][type='button']", {onclick: ctrl.onClickAddButton}, "追加")
+            m("button.btn.btn-primary[type='button']", { onclick: ctrl.onClickAddButton }, "追加")
           ])
         ])
       ])
@@ -175,8 +236,38 @@ var AddBookmarkDialog = {
 };
 
 var DeleteBookmarkDialog = {
+  controller: function() {
+    var ctrl = this;
+    this.id = m.prop();
+    this.url = m.prop('');
+    this.title = m.prop('');
+    this.configDialog = function(elem, isInitialized, context) {
+      if (!isInitialized) {
+        ctrl.dialogElem = elem;
+      }
+    };
+    this.show = function(msg, data) {
+      ctrl.id(data.id);
+      ctrl.url(data.url);
+      ctrl.title(data.title);
+      m.redraw();
+      $(ctrl.dialogElem).modal('show');
+    };
+    this.hide = function() {
+      $(ctrl.dialogElem).modal('hide');
+    };
+    this.onClickDeleteButton = function() {
+      API.deleteBookmark(ctrl.id())
+        .then(ctrl.hide)
+        .then(function() {
+          PubSub.publish('BookmarksTable.showSuccessFlashMessage', {message: 'ブックマークを削除しました'});
+          PubSub.publish('BookmarksTable.deleteSelectedRow');
+        });
+    };
+    PubSub.subscribe('DeleteBookmarkDialog.show', this.show);
+  },
   view: function(ctrl) {
-    return m(".modal.fade[id='deleteDialog']", [
+    return m(".modal.fade", { config: ctrl.configDialog }, [
       m(".modal-dialog", [
         m(".modal-content", [
           m(".modal-header", [
@@ -187,14 +278,14 @@ var DeleteBookmarkDialog = {
             m(".alerts-container"),
             m("dl", [
               m("dt", "URL"),
-              m("dd[id='deleteDialogBookmarkURL']"),
+              m("dd", ctrl.url()),
               m("dt", "タイトル"),
-              m("dd[id='deleteDialogBookmarkTitle']")
+              m("dd", ctrl.title())
             ])
           ]),
           m(".modal-footer", [
             m("button.btn.btn-default[data-dismiss='modal'][type='button']", "キャンセル"),
-            m("button.btn.btn-primary[id='deleteDialogDeleteButton'][type='button']", "削除")
+            m("button.btn.btn-primary[type='button']", { onclick: ctrl.onClickDeleteButton }, "削除")
           ])
         ])
       ])
@@ -203,28 +294,6 @@ var DeleteBookmarkDialog = {
 };
 
 m.mount(document.getElementById('componentContainer'), BookmarksPage);
-
-var $table = $('#table');
-
-function addSortOptions(options) {
-  var uri = new URI(),
-      paramsInURI = uri.query(true),
-      sort = paramsInURI.sort,
-      order = paramsInURI.order;
-  if ($.inArray(sort, ['id', 'url', 'title', 'bookmarked_at']) !== -1) {
-    options.sortName = sort;
-  }
-  if ($.inArray(order, ['asc', 'desc']) !== -1) {
-    options.sortOrder = order;
-  }
-  return options;
-}
-
-$table.bootstrapTable(addSortOptions({
-  onCheck: function() {
-    $('#deleteButton').removeClass('disabled');
-  }
-}));
 
 function saveBrowserHistory(params) {
   var uri = new URI(),
@@ -237,31 +306,6 @@ function saveBrowserHistory(params) {
   return params;
 }
 
-$('#deleteButton').on('click', function(e) {
-  var row = getSelectedRow();
-  $('#deleteDialogBookmarkURL').html(row.url);
-  $('#deleteDialogBookmarkTitle').html(row.title);
-});
-
-$('#deleteDialogDeleteButton').on('click', function(e) {
-  var row = getSelectedRow();
-  var apiURL= '/api/v1/bookmarks/' + row.id + '/';
-  $.ajax({
-    url: apiURL,
-    method: 'DELETE',
-    headers: {
-      'X-CSRFToken': $.cookie('csrftoken')
-    },
-  })
-  .done(function(data, textStatus, jqXHR) {
-    $('#deleteDialog').modal('hide');
-    deleteSelectedRows();
-  })
-  .fail(function(jqXHR, textStatus, errorThrown) {
-    showErrorInDialog('deleteDialog', jqXHR);
-  });
-});
-
 function showErrorInDialog(dialogID, jqXHR) {
   var message = jqXHR.responseJSON ? jqXHR.responseJSON.errors[0].title : jqXHR.statusText;
   $('#' + dialogID + ' .alerts-container').prepend(
@@ -269,25 +313,6 @@ function showErrorInDialog(dialogID, jqXHR) {
   );
   $('#' + dialogID).one('hidden.bs.modal', function() {
     $('#' + dialogID + ' .alerts-container').empty();
-  });
-}
-
-function refreshTable() {
-  $table.bootstrapTable('refresh');
-  $('#deleteButton').addClass('disabled');
-}
-
-function getSelectedRow() {
-  return $table.bootstrapTable('getSelections')[0];
-}
-
-function deleteSelectedRows() {
-  var ids = $.map($table.bootstrapTable('getSelections'), function (row) {
-    return row.id;
-  });
-  $table.bootstrapTable('remove', {
-    field: 'id',
-    values: ids
   });
 }
 
