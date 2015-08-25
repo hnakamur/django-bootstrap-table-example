@@ -111,11 +111,11 @@ $('#addDialogAddButton').on('click', function(e) {
   })
   .done(function(data, textStatus, jqXHR) {
     $('#addDialog').modal('hide');
-    $table.bootstrapTable('refresh');
+    refreshTable();
   })
   .fail(function(jqXHR, textStatus, errorThrown) {
     showErrorInDialog('addDialog', jqXHR);
-  })
+  });
 })
 
 $('#deleteButton').on('click', function(e) {
@@ -137,7 +137,7 @@ $('#deleteDialogDeleteButton').on('click', function(e) {
   })
   .fail(function(jqXHR, textStatus, errorThrown) {
     showErrorInDialog('deleteDialog', jqXHR);
-  })
+  });
 });
 
 function showErrorInDialog(dialogID, jqXHR) {
@@ -145,6 +145,11 @@ function showErrorInDialog(dialogID, jqXHR) {
   $('#' + dialogID + ' .modal-body').prepend(
     '<div class="alert alert-danger" role="alert">' + errors[0].title + '</div>'
   );
+}
+
+function refreshTable() {
+  $table.bootstrapTable('refresh');
+  $('#deleteButton').addClass('disabled');
 }
 
 function getSelectedRow() {
