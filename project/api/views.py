@@ -1,7 +1,11 @@
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from logging import getLogger
 
 from bookmarks.models import Bookmark
+
+logger = getLogger(__name__)
 
 def bookmarks(request):
     bookmarks = Bookmark.objects.all()
@@ -17,7 +21,22 @@ def bookmarks(request):
         'total': len(bookmarks),
         'rows': rows
     }
-    response = JsonResponse(data, safe=False)
-    #response['Access-Control-Allow-Origin'] = '*'
-    #response['Access-Control-Allow-Headers'] = 'X-Requested-With'
-    return response
+    return JsonResponse(data)
+
+@csrf_exempt
+def bookmark(request, bookmark_id):
+    data = {}
+    if request.method == 'DELETE':
+        try:
+            bookmark = Bookmark.objects.get(pk=bookmark_id)
+            bookmark.delete()
+            return JsonResponse(data, status=204)
+        except:
+            data = {
+                'errors': [{
+                    'title': 'ブックマークを削除できませんでした'
+                }]
+            }
+            return JsonResponse(data, status=500)
+    return JsonResponse(data)
+

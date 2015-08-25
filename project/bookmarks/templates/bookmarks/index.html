@@ -1,26 +1,33 @@
 {% extends "bookmarks/base.html" %}
 {% block title %}bootstrap table example{% endblock %}
 {% block content %}
-hello bootstrap table
-
+<h1>Bookmarks</h1>
 <div class="container">
+  <div id="toolbar">
+    <button id="addButton" class="btn btn-default">追加</button>
+    <button id="deleteButton" class="btn btn-default disabled" data-toggle="modal" data-target="#deleteDialog">削除</button>
+  </div>
   <table id="table"
          class="bookmarks-table"
-         data-striped="true"
          data-toggle="table"
+         data-striped="true"
+         data-toolbar="#toolbar"
          data-url="/api/v1/bookmarks/"
+         data-click-to-select="true"
          data-show-toggle="true"
          data-show-columns="true"
          data-pagination="true"
          data-side-pagination="server"
          data-page-list="[10, 25, 50, 100]"
          data-search="true">
+    <col class="bookmarks-table-select-column"/>
     <col class="bookmarks-table-id-column"/>
     <col class="bookmarks-table-title-column"/>
     <col class="bookmarks-table-url-column"/>
     <col class="bookmarks-table-bookmarked-at-column"/>
     <thead>
       <tr>
+        <th data-field="state" data-radio="true"></th>
         <th data-field="id" data-sortable="true">ID</th>
         <th data-field="title" data-sortable="true">Title</th>
         <th data-field="url" data-sortable="true" data-formatter="urlFormatter">URL</th>
@@ -29,9 +36,75 @@ hello bootstrap table
     </thead>
   </table>
 </div>
+<div class="modal fade" id="deleteDialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">ブックマークを削除しますか？</h4>
+      </div>
+      <div class="modal-body">
+        <dl>
+          <dt>URL</dt><dd id="deleteDialogBookmarkURL"></dd>
+          <dt>タイトル</dt><dd id="deleteDialogBookmarkTitle"></dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-primary" id="deleteDialogDeleteButton">削除</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 {% endblock %}
 {% block script %}
 <script>
+var $table = $('#table');
+$table.bootstrapTable({
+  onCheck: function() {
+    $('#deleteButton').removeClass('disabled');
+  }
+});
+
+function getSelectedRow() {
+  return $table.bootstrapTable('getSelections')[0];
+}
+
+function deleteSelectedRows() {
+  var ids = $.map($table.bootstrapTable('getSelections'), function (row) {
+    return row.id;
+  });
+  $table.bootstrapTable('remove', {
+    field: 'id',
+    values: ids
+  });
+}
+
+$('#deleteButton').on('click', function(e) {
+  var row = getSelectedRow();
+  $('#deleteDialogBookmarkURL').html(row.url);
+  $('#deleteDialogBookmarkTitle').html(row.title);
+});
+
+$('#deleteDialogDeleteButton').on('click', function(e) {
+  var row = getSelectedRow();
+  var url = '/api/v1/bookmarks/' + row.id + '/';
+  $.ajax({
+    url: url,
+    method: 'DELETE'
+  })
+  .done(function(data, textStatus, jqXHR) {
+    $('#deleteDialog').modal('hide');
+    deleteSelectedRows();
+  })
+  .fail(function(jqXHR, textStatus, errorThrown) {
+    var errors = jqXHR.responseJSON.errors;
+    $('#deleteDialog .modal-body').prepend(
+      '<div class="alert alert-danger" role="alert">' + errors[0].title + '</div>'
+    );
+  })
+});
+
 function urlFormatter(value) {
   return /^https?:\/\//.test(value) ? '<a href="' + value + '" target="_blank">' + value + '</a>' : value;
 }

@@ -140,7 +140,7 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': True,
         },
-        'polls': {
+        'api': {
             'handlers': ['debug_file'],
             'level': 'DEBUG',
             'propagate': True,
