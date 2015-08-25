@@ -46,14 +46,29 @@ def _get_bookmarks(request):
     return JsonResponse(data)
 
 def _post_bookmarks(request):
-    url = request.POST['url']
-    title = request.POST['title']
-    bookmark = Bookmark()
-    bookmark.url = url
-    bookmark.title = title
-    bookmark.save()
-    data = {}
-    return JsonResponse(data, status=201)
+    try:
+        url = request.POST['url']
+        title = request.POST['title']
+        if not url or not title:
+            data = {
+                'errors': [{
+                    'title': 'URLとタイトルは必須項目です'
+                }]
+            }
+            return JsonResponse(data, status=400)
+
+        bookmark = Bookmark()
+        bookmark.url = url
+        bookmark.title = title
+        bookmark.save()
+        return JsonResponse({}, status=201)
+    except:
+        data = {
+            'errors': [{
+                'title': 'ブックマークを登録できませんでした'
+            }]
+        }
+        return JsonResponse(data, status=500)
 
 @ensure_csrf_cookie
 def bookmark(request, bookmark_id):

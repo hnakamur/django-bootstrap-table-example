@@ -143,6 +143,7 @@ var BookmarksTable = {
 var AddBookmarkDialog = {
   controller: function() {
     var ctrl = this;
+    this.errorMessage = m.prop('');
     this.url = m.prop('');
     this.title = m.prop('');
     this.configDialog = function(elem, isInitialized, context) {
@@ -151,8 +152,10 @@ var AddBookmarkDialog = {
       }
     };
     this.show = function() {
+      ctrl.errorMessage('');
       ctrl.url('');
       ctrl.title('');
+      m.redraw();
       $(ctrl.dialogElem).modal('show');
     };
     this.hide = function() {
@@ -164,6 +167,9 @@ var AddBookmarkDialog = {
         .then(function() {
           PubSub.publish('BookmarksTable.showSuccessFlashMessage', {message: 'ブックマークを登録しました'});
           PubSub.publish('BookmarksTable.refresh');
+        })
+        .then(null, function(data) {
+          ctrl.errorMessage(data.errors[0].title);
         });
     };
     PubSub.subscribe('AddBookmarkDialog.show', this.show);
@@ -179,7 +185,9 @@ var AddBookmarkDialog = {
             m("h4.modal-title", "ブックマークの登録")
           ]),
           m(".modal-body", [
-            m(".alerts-container"),
+            m(".alerts-container", [
+              ctrl.errorMessage() !== '' ? m(".alert.alert-danger[role='alert']", ctrl.errorMessage()) : ''
+            ]),
             m("form", [
               m(".form-group", [
                 m("label[for='addDialogURL']", "URL"),
@@ -216,6 +224,7 @@ var DeleteBookmarkDialog = {
       }
     };
     this.show = function(msg, data) {
+      ctrl.errorMessage('');
       ctrl.id(data.id);
       ctrl.url(data.url);
       ctrl.title(data.title);
@@ -334,6 +343,7 @@ function urlFormatter(value) {
     return value;
   }
 }
+
 function datetimeFormatter(value) {
   var dt = new Date(Date.parse(value));
   return dt.getFullYear() + '/' + format2digit(dt.getMonth() + 1) + '/' + format2digit(dt.getDay()) + ' ' +
