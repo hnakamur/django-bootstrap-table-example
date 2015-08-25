@@ -107,6 +107,9 @@ $('#addDialogAddButton').on('click', function(e) {
   $.ajax({
     url: apiURL,
     method: 'POST',
+    headers: {
+      'X-CSRFToken': $.cookie('csrftoken')
+    },
     data: {
       url: url,
       title: title
@@ -133,7 +136,10 @@ $('#deleteDialogDeleteButton').on('click', function(e) {
   var apiURL= '/api/v1/bookmarks/' + row.id + '/';
   $.ajax({
     url: apiURL,
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: {
+      'X-CSRFToken': $.cookie('csrftoken')
+    },
   })
   .done(function(data, textStatus, jqXHR) {
     $('#deleteDialog').modal('hide');
@@ -154,9 +160,9 @@ function showSuccessFlashMessage(message) {
 }
 
 function showErrorInDialog(dialogID, jqXHR) {
-  var errors = jqXHR.responseJSON.errors;
+  var message = jqXHR.responseJSON ? jqXHR.responseJSON.errors[0].title : jqXHR.statusText;
   $('#' + dialogID + ' .alerts-container').prepend(
-    '<div class="alert alert-danger" role="alert">' + errors[0].title + '</div>'
+    '<div class="alert alert-danger" role="alert">' + message + '</div>'
   );
   $('#' + dialogID).one('hidden.bs.modal', function() {
     $('#' + dialogID + ' .alerts-container').empty();

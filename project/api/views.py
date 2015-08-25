@@ -1,13 +1,13 @@
 from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from logging import getLogger
 
 from bookmarks.models import Bookmark
 
 logger = getLogger(__name__)
 
-@csrf_exempt
+@ensure_csrf_cookie
 def bookmarks(request):
     if request.method == 'GET':
         bookmarks = Bookmark.objects.all()
@@ -37,7 +37,7 @@ def bookmarks(request):
     else:
         return JsonResponse({}, status=405)
 
-@csrf_exempt
+@ensure_csrf_cookie
 def bookmark(request, bookmark_id):
     if request.method == 'DELETE':
         try:
