@@ -1,5 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.db.models import Q
 from django.views.decorators.csrf import ensure_csrf_cookie
 from logging import getLogger
 
@@ -10,7 +11,11 @@ logger = getLogger(__name__)
 @ensure_csrf_cookie
 def bookmarks(request):
     if request.method == 'GET':
-        bookmarks = Bookmark.objects.all()
+        search = request.GET.get('search')
+        if search:
+            bookmarks = Bookmark.objects.filter(Q(title__contains=search) | Q(url__contains=search))
+        else:
+            bookmarks = Bookmark.objects.all()
         offset = int(request.GET.get('offset') or '0')
         limit = int(request.GET.get('limit') or len(bookmarks) - offset)
         rows = [{
