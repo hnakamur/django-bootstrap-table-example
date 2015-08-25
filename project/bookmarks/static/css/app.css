@@ -1,4 +1,3 @@
-/*
 .bookmarks-table-id-column {
   width: 5%;
 }
@@ -10,9 +9,4 @@
 }
 .bookmarks-table-bookmarked-at-column {
   width: 10%;
-}
-*/
-
-td {
-  word-wrap: word-break;
 }
