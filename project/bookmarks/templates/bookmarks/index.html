@@ -4,7 +4,7 @@
 <h1>Bookmarks</h1>
 <div class="container">
   <div id="toolbar">
-    <button id="addButton" class="btn btn-default">追加</button>
+    <button id="addButton" class="btn btn-default" data-toggle="modal" data-target="#addDialog">追加</button>
     <button id="deleteButton" class="btn btn-default disabled" data-toggle="modal" data-target="#deleteDialog">削除</button>
   </div>
   <table id="table"
@@ -29,13 +29,39 @@
       <tr>
         <th data-field="state" data-radio="true"></th>
         <th data-field="id" data-sortable="true">ID</th>
-        <th data-field="title" data-sortable="true">Title</th>
         <th data-field="url" data-sortable="true" data-formatter="urlFormatter">URL</th>
-        <th data-field="bookmarked_at" data-sortable="true" data-formatter="datetimeFormatter">Bookmarked At</th>
+        <th data-field="title" data-sortable="true">タイトル</th>
+        <th data-field="bookmarked_at" data-sortable="true" data-formatter="datetimeFormatter">作成日時</th>
       </tr>
     </thead>
   </table>
 </div>
+<div class="modal fade" id="addDialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">ブックマークの登録</h4>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group">
+            <label for="addDialogURL">URL</label>
+            <input type="text" class="form-control" id="addDialogURL">
+          </div>
+          <div class="form-group">
+            <label for="addDialogTitle">タイトル</label>
+            <input type="text" class="form-control" id="addDialogTitle">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
+        <button type="button" class="btn btn-primary" id="addDialogAddButton">追加</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 <div class="modal fade" id="deleteDialog">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -66,6 +92,61 @@ $table.bootstrapTable({
   }
 });
 
+$('#addButton').on('click', function(e) {
+  $('#addDialogURL').val('');
+  $('#addDialogTitle').val('');
+});
+
+$('#addDialogAddButton').on('click', function(e) {
+  var apiURL = '/api/v1/bookmarks/',
+      url = $('#addDialogURL').val(),
+      title = $('#addDialogTitle').val();
+  $.ajax({
+    url: apiURL,
+    method: 'POST',
+    data: {
+      url: url,
+      title: title
+    }
+  })
+  .done(function(data, textStatus, jqXHR) {
+    $('#addDialog').modal('hide');
+    $table.bootstrapTable('refresh');
+  })
+  .fail(function(jqXHR, textStatus, errorThrown) {
+    showErrorInDialog('addDialog', jqXHR);
+  })
+})
+
+$('#deleteButton').on('click', function(e) {
+  var row = getSelectedRow();
+  $('#deleteDialogBookmarkURL').html(row.url);
+  $('#deleteDialogBookmarkTitle').html(row.title);
+});
+
+$('#deleteDialogDeleteButton').on('click', function(e) {
+  var row = getSelectedRow();
+  var apiURL= '/api/v1/bookmarks/' + row.id + '/';
+  $.ajax({
+    url: apiURL,
+    method: 'DELETE'
+  })
+  .done(function(data, textStatus, jqXHR) {
+    $('#deleteDialog').modal('hide');
+    deleteSelectedRows();
+  })
+  .fail(function(jqXHR, textStatus, errorThrown) {
+    showErrorInDialog('deleteDialog', jqXHR);
+  })
+});
+
+function showErrorInDialog(dialogID, jqXHR) {
+  var errors = jqXHR.responseJSON.errors;
+  $('#' + dialogID + ' .modal-body').prepend(
+    '<div class="alert alert-danger" role="alert">' + errors[0].title + '</div>'
+  );
+}
+
 function getSelectedRow() {
   return $table.bootstrapTable('getSelections')[0];
 }
@@ -79,31 +160,6 @@ function deleteSelectedRows() {
     values: ids
   });
 }
-
-$('#deleteButton').on('click', function(e) {
-  var row = getSelectedRow();
-  $('#deleteDialogBookmarkURL').html(row.url);
-  $('#deleteDialogBookmarkTitle').html(row.title);
-});
-
-$('#deleteDialogDeleteButton').on('click', function(e) {
-  var row = getSelectedRow();
-  var url = '/api/v1/bookmarks/' + row.id + '/';
-  $.ajax({
-    url: url,
-    method: 'DELETE'
-  })
-  .done(function(data, textStatus, jqXHR) {
-    $('#deleteDialog').modal('hide');
-    deleteSelectedRows();
-  })
-  .fail(function(jqXHR, textStatus, errorThrown) {
-    var errors = jqXHR.responseJSON.errors;
-    $('#deleteDialog .modal-body').prepend(
-      '<div class="alert alert-danger" role="alert">' + errors[0].title + '</div>'
-    );
-  })
-});
 
 function urlFormatter(value) {
   return /^https?:\/\//.test(value) ? '<a href="' + value + '" target="_blank">' + value + '</a>' : value;
