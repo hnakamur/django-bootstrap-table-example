@@ -7,6 +7,7 @@ rsync \
 	bower_components/bootstrap-table/dist/locale/bootstrap-table-ja-JP.min.js \
 	bower_components/jquery.cookie/jquery.cookie.js \
 	bower_components/URIjs/src/URI.js \
+	bower_components/mithril/mithril.js \
 	project/bookmarks/static/js/
 
 rsync \
