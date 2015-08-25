@@ -60,7 +60,7 @@ var Toolbar = {
     if (ctrl.selectedRow().id === undefined) {
       deleteButtonAttrs['class'] = 'disabled';
     }
-    return m("", { id: args.toolbar_dom_id }, [
+    return m(".toolbar", { id: args.toolbar_dom_id }, [
       m(".btn-group",
         m("button.btn.btn-default[data-toggle='modal']", { onclick: ctrl.onClickAddButton }, "追加")
       ),
