@@ -189,7 +189,13 @@ function deleteSelectedRows() {
 }
 
 function urlFormatter(value) {
-  return /^https?:\/\//.test(value) ? '<a href="' + value + '" target="_blank">' + value + '</a>' : value;
+  if (/^https?:\/\//.test(value)) {
+    return '<a href="' + value + '" target="_blank">' + value + '</a>';
+  } else if (/^smb:\/\//.test(value)) {
+    return value.substr('smb:'.length).replace(/\//g, '\\');
+  } else {
+    return value;
+  }
 }
 function datetimeFormatter(value) {
   var dt = new Date(Date.parse(value));
