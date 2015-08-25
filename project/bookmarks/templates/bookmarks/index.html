@@ -1,93 +1,12 @@
 {% extends "bookmarks/base.html" %}
+{% load staticfiles %}
 {% block title %}bootstrap table example{% endblock %}
 {% block content %}
 <h1>Bookmarks</h1>
-<div class="container">
-  <div id="alerts"></div>
-  <div id="toolbar">
-    <button id="addButton" class="btn btn-default" data-toggle="modal" data-target="#addDialog">追加</button>
-    <button id="deleteButton" class="btn btn-default disabled" data-toggle="modal" data-target="#deleteDialog">削除</button>
-  </div>
-  <table id="table"
-         class="bookmarks-table"
-         data-toggle="table"
-         data-striped="true"
-         data-toolbar="#toolbar"
-         data-url="/api/v1/bookmarks/"
-         data-click-to-select="true"
-         data-show-toggle="true"
-         data-show-columns="true"
-         data-pagination="true"
-         data-side-pagination="server"
-         data-query-params="saveBrowserHistory"
-         data-page-list="[10, 25, 50, 100]"
-         data-search="true">
-    <col class="bookmarks-table-select-column"/>
-    <col class="bookmarks-table-id-column"/>
-    <col class="bookmarks-table-title-column"/>
-    <col class="bookmarks-table-url-column"/>
-    <col class="bookmarks-table-bookmarked-at-column"/>
-    <thead>
-      <tr>
-        <th data-field="state" data-radio="true"></th>
-        <th data-field="id" data-sortable="true">ID</th>
-        <th data-field="url" data-sortable="true" data-formatter="urlFormatter">URL</th>
-        <th data-field="title" data-sortable="true">タイトル</th>
-        <th data-field="bookmarked_at" data-sortable="true" data-formatter="datetimeFormatter">作成日時</th>
-      </tr>
-    </thead>
-  </table>
-</div>
-<div class="modal fade" id="addDialog">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title">ブックマークの登録</h4>
-      </div>
-      <div class="modal-body">
-        <div class="alerts-container"></div>
-        <form>
-          <div class="form-group">
-            <label for="addDialogURL">URL</label>
-            <input type="text" class="form-control" id="addDialogURL">
-          </div>
-          <div class="form-group">
-            <label for="addDialogTitle">タイトル</label>
-            <input type="text" class="form-control" id="addDialogTitle">
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
-        <button type="button" class="btn btn-primary" id="addDialogAddButton">追加</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
-<div class="modal fade" id="deleteDialog">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title">ブックマークを削除しますか？</h4>
-      </div>
-      <div class="modal-body">
-        <div class="alerts-container"></div>
-        <dl>
-          <dt>URL</dt><dd id="deleteDialogBookmarkURL"></dd>
-          <dt>タイトル</dt><dd id="deleteDialogBookmarkTitle"></dd>
-        </dl>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">キャンセル</button>
-        <button type="button" class="btn btn-primary" id="deleteDialogDeleteButton">削除</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+<div class="container" id="componentContainer"></div>
 {% endblock %}
 {% block script %}
+<script src="{% static "js/app.js" %}"></script>
 <script>
 var $table = $('#table');
 
