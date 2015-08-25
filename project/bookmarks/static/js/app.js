@@ -30,7 +30,7 @@ var AlertPanel = {
     PubSub.subscribe('BookmarksTable.showSuccessFlashMessage', this.showSuccessFlashMessage);
   },
   view: function(ctrl) {
-    return m("[id='alerts']", [
+    return m('', [
       ctrl.visible() ?
         m(".alert.alert-success[role='alert']", ctrl.message()) : ''
     ]);
@@ -67,8 +67,8 @@ var Toolbar = {
 
 var BookmarksTable = {
   controller: function(args) {
-    this.selectedRow = args.selectedRow
     var ctrl = this;
+    this.selectedRow = args.selectedRow;
     this.updateSelectedRow = function(row) {
       ctrl.selectedRow(row);
       m.redraw();
@@ -140,38 +140,6 @@ var BookmarksTable = {
   }
 };
 
-var API = {
-  addBookmark: function(url, title) {
-    var apiURL = '/api/v1/bookmarks/',
-        data = {
-          url: url,
-          title: title
-        },
-        xhrConfig = function(xhr) {
-          xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
-          xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-        };
-    return m.request({
-      method: 'POST',
-      url: apiURL,
-      config: xhrConfig,
-      data: data,
-      serialize: $.param
-    });
-  },
-  deleteBookmark: function(id) {
-    var apiURL = '/api/v1/bookmarks/' + id,
-        xhrConfig = function(xhr) {
-          xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
-        };
-    return m.request({
-      method: 'DELETE',
-      url: apiURL,
-      config: xhrConfig
-    });
-  }
-};
-
 var AddBookmarkDialog = {
   controller: function() {
     var ctrl = this;
@@ -238,6 +206,7 @@ var AddBookmarkDialog = {
 var DeleteBookmarkDialog = {
   controller: function() {
     var ctrl = this;
+    this.errorMessage = m.prop('');
     this.id = m.prop();
     this.url = m.prop('');
     this.title = m.prop('');
@@ -262,6 +231,9 @@ var DeleteBookmarkDialog = {
         .then(function() {
           PubSub.publish('BookmarksTable.showSuccessFlashMessage', {message: 'ブックマークを削除しました'});
           PubSub.publish('BookmarksTable.deleteSelectedRow');
+        })
+        .then(null, function(data) {
+          ctrl.errorMessage(data.errors[0].title);
         });
     };
     PubSub.subscribe('DeleteBookmarkDialog.show', this.show);
@@ -275,7 +247,9 @@ var DeleteBookmarkDialog = {
             m("h4.modal-title", "ブックマークを削除しますか？")
           ]),
           m(".modal-body", [
-            m(".alerts-container"),
+            m(".alerts-container", [
+              ctrl.errorMessage() !== '' ? m(".alert.alert-danger[role='alert']", ctrl.errorMessage()) : ''
+            ]),
             m("dl", [
               m("dt", "URL"),
               m("dd", ctrl.url()),
@@ -293,6 +267,51 @@ var DeleteBookmarkDialog = {
   }
 };
 
+var API = {
+  addBookmark: function(url, title) {
+    var apiURL = '/api/v1/bookmarks/',
+        data = {
+          url: url,
+          title: title
+        },
+        xhrConfig = function(xhr) {
+          xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
+          xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        };
+    return m.request({
+      method: 'POST',
+      url: apiURL,
+      config: xhrConfig,
+      data: data,
+      serialize: $.param,
+      unwrapError: API._unwrapError
+    });
+  },
+  deleteBookmark: function(id) {
+    var apiURL = '/api/v1/bookmarks/' + id,
+        xhrConfig = function(xhr) {
+          xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
+        };
+    return m.request({
+      method: 'DELETE',
+      url: apiURL,
+      config: xhrConfig,
+      unwrapError: API._unwrapError
+    });
+  },
+  _unwrapError: function(data, xhr) {
+    if (data.errors) {
+      return data;
+    } else {
+      return {
+        errors: [{
+          title: xhr.statusText
+        }]
+      };
+    }
+  }
+};
+
 m.mount(document.getElementById('componentContainer'), BookmarksPage);
 
 function saveBrowserHistory(params) {
@@ -304,16 +323,6 @@ function saveBrowserHistory(params) {
     window.history.pushState(undefined, document.title, '' + uri);
   }
   return params;
-}
-
-function showErrorInDialog(dialogID, jqXHR) {
-  var message = jqXHR.responseJSON ? jqXHR.responseJSON.errors[0].title : jqXHR.statusText;
-  $('#' + dialogID + ' .alerts-container').prepend(
-    '<div class="alert alert-danger" role="alert">' + message + '</div>'
-  );
-  $('#' + dialogID).one('hidden.bs.modal', function() {
-    $('#' + dialogID + ' .alerts-container').empty();
-  });
 }
 
 function urlFormatter(value) {
