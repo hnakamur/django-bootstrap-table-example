@@ -57,7 +57,10 @@ PAGE_SIZES = [10, 25, 50, 1000]
 DEFAULT_PAGE_SIZE = PAGE_SIZES[0]
 
 def _page_size(request):
-    page_size = int(request.GET.get('pageSize') or str(DEFAULT_PAGE_SIZE))
+    try:
+        page_size = int(request.GET.get('pageSize') or str(DEFAULT_PAGE_SIZE))
+    except ValueError:
+        page_size = DEFAULT_PAGE_SIZE
     if page_size not in PAGE_SIZES:
         page_size = DEFAULT_PAGE_SIZE
     return page_size
@@ -65,7 +68,13 @@ def _page_size(request):
 DEFAULT_PAGE_NUMBER = 1
 
 def _page_number(request):
-    return int(request.GET.get('pageNumber') or str(DEFAULT_PAGE_NUMBER))
+    try:
+        page_number = int(request.GET.get('pageNumber') or str(DEFAULT_PAGE_NUMBER))
+    except ValueError:
+        page_size = DEFAULT_PAGE_NUMBER
+    if page_number < 1:
+        page_number = 1
+    return page_number
 
 def _post_bookmarks(request):
     try:
