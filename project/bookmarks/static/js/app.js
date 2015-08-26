@@ -147,7 +147,9 @@ var BookmarksTable = {
 var AddBookmarkDialog = {
   controller: function() {
     var ctrl = this;
+    this.validated = m.prop(false);
     this.errorMessage = m.prop('');
+    this.errorData = m.prop({});
     this.url = m.prop('');
     this.title = m.prop('');
     this.configDialog = function(elem, isInitialized, context) {
@@ -166,6 +168,7 @@ var AddBookmarkDialog = {
       $(ctrl.dialogElem).modal('hide');
     };
     this.onClickAddButton = function() {
+      ctrl.validated(false);
       API.addBookmark(ctrl.url(), ctrl.title())
         .then(ctrl.hide)
         .then(function() {
@@ -173,12 +176,32 @@ var AddBookmarkDialog = {
           PubSub.publish('BookmarksTable.refresh');
         })
         .then(null, function(data) {
+          ctrl.validated(true);
+          ctrl.errorData(data.errors[0].data);
           ctrl.errorMessage(data.errors[0].title);
         });
     };
     PubSub.subscribe('AddBookmarkDialog.show', this.show);
   },
   view: function(ctrl) {
+    function errorMessagesForKey(key) {
+      if (ctrl.validated()) {
+        var errors = ctrl.errorData()[key];
+        if (errors) {
+          return m('li.list-unstyled', errors.map(function(error) {
+            return m('ul.help-block', error.message);
+          }));
+        }
+      }
+      return [];
+    }
+    function validationStatusClass(key) {
+      if (ctrl.validated()) {
+        return {'class': ctrl.errorData()[key] ? 'has-error' : 'has-success'};
+      } else {
+        return {};
+      }
+    }
     return m(".modal.fade", { config: ctrl.configDialog }, [
       m(".modal-dialog", [
         m(".modal-content", [
@@ -193,15 +216,17 @@ var AddBookmarkDialog = {
               ctrl.errorMessage() !== '' ? m(".alert.alert-danger[role='alert']", ctrl.errorMessage()) : ''
             ]),
             m("form", [
-              m(".form-group", [
-                m("label[for='addDialogURL']", "URL"),
+              m(".form-group", validationStatusClass('url'), [
+                m("label.control-label[for='addDialogURL']", "URL"),
                 m("input.form-control[type='text']",
-                  {onchange: m.withAttr('value', ctrl.url), value: ctrl.url()})
+                  {onchange: m.withAttr('value', ctrl.url), value: ctrl.url()}),
+                errorMessagesForKey('url')
               ]),
-              m(".form-group", [
-                m("label[for='addDialogTitle']", "タイトル"),
+              m(".form-group", validationStatusClass('title'), [
+                m("label.control-label[for='addDialogTitle']", "タイトル"),
                 m("input.form-control[type='text']",
-                  {onchange: m.withAttr('value', ctrl.title), value: ctrl.title()})
+                  {onchange: m.withAttr('value', ctrl.title), value: ctrl.title()}),
+                errorMessagesForKey('title')
               ])
             ])
           ]),

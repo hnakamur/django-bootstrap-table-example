@@ -4,8 +4,10 @@ from django.shortcuts import render
 from django.db.models import Q
 from django.views.decorators.csrf import ensure_csrf_cookie
 from logging import getLogger
+import json
 
 from bookmarks.models import Bookmark
+from .forms import BookmarkForm
 
 logger = getLogger(__name__)
 
@@ -80,19 +82,22 @@ def _post_bookmarks(request):
     try:
         url = request.POST['url']
         title = request.POST['title']
-        if not url or not title:
+        form = BookmarkForm({'url': url, 'title': title})
+        if form.is_valid():
+            bookmark = Bookmark()
+            bookmark.url = url
+            bookmark.title = title
+            bookmark.save()
+            return JsonResponse({}, status=201)
+        else:
             data = {
                 'errors': [{
-                    'title': 'URLとタイトルは必須項目です'
+                    'title': '入力エラー',
+                    'data': json.loads(form.errors.as_json())
                 }]
             }
             return JsonResponse(data, status=400)
 
-        bookmark = Bookmark()
-        bookmark.url = url
-        bookmark.title = title
-        bookmark.save()
-        return JsonResponse({}, status=201)
     except:
         data = {
             'errors': [{
