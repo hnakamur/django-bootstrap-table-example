@@ -90,13 +90,29 @@ var BookmarksTable = {
         function addSortOptions(options) {
           var uri = new URI(),
               paramsInURI = uri.query(true),
-              sortName = paramsInURI.sortName,
-              sortOrder = paramsInURI.sortOrder;
-          if (['id', 'url', 'title', 'bookmarked_at'].indexOf(sortName) !== -1) {
-            options.sortName = sortName;
+              page = paramsInURI.page,
+              page_size = paramsInURI.page_size,
+              search_text = paramsInURI.search_text,
+              ordering = paramsInURI.ordering;
+          if (page) {
+            options.pageNumber = page;
           }
-          if (['asc', 'desc'].indexOf(sortOrder) !== -1) {
-            options.sortOrder = sortOrder;
+          if (page_size) {
+            options.pageSize = page_size;
+          }
+          if (search_text) {
+            options.searchText = search_text;
+          }
+          if (ordering) {
+            if (/^-/.test(ordering)) {
+              options.sortOrder = 'desc';
+              ordering = ordering.substr(1);
+            } else {
+              options.sortOrder = 'asc';
+            }
+            if (['id', 'url', 'title', 'bookmarked_at'].indexOf(ordering) !== -1) {
+              options.sortName = ordering;
+            }
           }
           return options;
         }
@@ -117,7 +133,7 @@ var BookmarksTable = {
     PubSub.subscribe('BookmarksTable.refresh', this.refresh);
   },
   view: function(ctrl, args) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page']",
+    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page'][data-query-params='bookmarksQueryParamsAdaptor'][data-response-handler='bookmarksTableResponseHandler']",
         {
           'data-url': args.getBookmarksURL,
           'data-toolbar': '#' + args.toolbar_dom_id,
@@ -306,7 +322,7 @@ var DeleteBookmarkDialog = {
 };
 
 var API = {
-  getBookmarksURL: '/api/v1/bookmarks/',
+  getBookmarksURL: '/api/v2/bookmarks/',
   addBookmark: function(url, title) {
     var apiURL = '/api/v1/bookmarks/',
         data = {
@@ -361,7 +377,28 @@ function saveBrowserHistory(params) {
   if (newURL !== window.location.href) {
     window.history.pushState(undefined, document.title, '' + uri);
   }
-  return params;
+}
+
+function bookmarksQueryParamsAdaptor(params) {
+  console.log('bookmarksQueryParamsAdaptor. params=', params);
+  var newParams = {
+    page: params.pageNumber,
+    page_size: params.pageSize,
+    search_text: params.searchText
+  };
+  if (params.sortName) {
+    newParams.ordering = params.sortOrder === 'asc' ? params.sortName : '-' + params.sortName;
+  }
+  saveBrowserHistory(newParams);
+  return newParams;
+}
+
+function bookmarksTableResponseHandler(res) {
+  var res2 = {
+    total: res.data.meta.pagination.count,
+    rows: res.data.results
+  };
+  return res2;
 }
 
 function urlFormatter(value) {
