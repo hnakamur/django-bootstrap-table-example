@@ -90,13 +90,13 @@ var BookmarksTable = {
         function addSortOptions(options) {
           var uri = new URI(),
               paramsInURI = uri.query(true),
-              sort = paramsInURI.sort,
-              order = paramsInURI.order;
-          if (['id', 'url', 'title', 'bookmarked_at'].indexOf(sort) !== -1) {
-            options.sortName = sort;
+              sortName = paramsInURI.sortName,
+              sortOrder = paramsInURI.sortOrder;
+          if (['id', 'url', 'title', 'bookmarked_at'].indexOf(sortName) !== -1) {
+            options.sortName = sortName;
           }
-          if (['asc', 'desc'].indexOf(order) !== -1) {
-            options.sortOrder = order;
+          if (['asc', 'desc'].indexOf(sortOrder) !== -1) {
+            options.sortOrder = sortOrder;
           }
           return options;
         }
@@ -115,21 +115,9 @@ var BookmarksTable = {
       ctrl.updateSelectedRow({});
     };
     PubSub.subscribe('BookmarksTable.refresh', this.refresh);
-
-    this.deleteSelectedRow = function() {
-      var id = ctrl.selectedRow().id;
-      if (id !== undefined) {
-        $(ctrl.tableElem).bootstrapTable('remove', {
-          field: 'id',
-          values: [id]
-        });
-        ctrl.updateSelectedRow({});
-      }
-    }
-    PubSub.subscribe('BookmarksTable.deleteSelectedRow', this.deleteSelectedRow);
   },
   view: function(ctrl, args) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table']",
+    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page']",
         {
           'data-url': args.getBookmarksURL,
           'data-toolbar': '#' + args.toolbar_dom_id,
@@ -255,7 +243,7 @@ var DeleteBookmarkDialog = {
         .then(ctrl.hide)
         .then(function() {
           PubSub.publish('BookmarksTable.showSuccessFlashMessage', {message: 'ブックマークを削除しました'});
-          PubSub.publish('BookmarksTable.deleteSelectedRow');
+          PubSub.publish('BookmarksTable.refresh');
         })
         .then(null, function(data) {
           ctrl.errorMessage(data.errors[0].title);

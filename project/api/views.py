@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator, EmptyPage
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.db.models import Q
@@ -18,32 +19,53 @@ def bookmarks(request):
         return JsonResponse({}, status=405)
 
 def _get_bookmarks(request):
-    search = request.GET.get('search')
+    search = request.GET.get('searchText')
     if search:
         bookmarks = Bookmark.objects.filter(Q(title__contains=search) | Q(url__contains=search))
     else:
         bookmarks = Bookmark.objects.all()
-    sort = request.GET.get('sort')
+    sort = request.GET.get('sortName')
     if sort and sort in ('id', 'url', 'title', 'bookmarked_at'):
-        if request.GET.get('order') == 'desc':
+        if request.GET.get('sortOrder') == 'desc':
             order = '-{0}'.format(sort)
         else:
             order = sort
         bookmarks = bookmarks.order_by(order)
 
-    offset = int(request.GET.get('offset') or '0')
-    limit = int(request.GET.get('limit') or len(bookmarks) - offset)
+    page_number = _page_number(request)
+    page_size = _page_size(request)
+    paginator = Paginator(bookmarks, page_size)
+    try:
+        page = paginator.page(page_number)
+    except EmptyPage:
+        page_number = paginator.num_pages
+        page = paginator.page(page_number)
+
     rows = [{
         'id': b.id,
         'url': b.url,
         'title': b.title,
         'bookmarked_at': b.bookmarked_at
-    } for b in bookmarks[offset:offset + limit]]
+    } for b in page]
     data = {
         'total': len(bookmarks),
         'rows': rows
     }
     return JsonResponse(data)
+
+PAGE_SIZES = [10, 25, 50, 1000]
+DEFAULT_PAGE_SIZE = PAGE_SIZES[0]
+
+def _page_size(request):
+    page_size = int(request.GET.get('pageSize') or str(DEFAULT_PAGE_SIZE))
+    if page_size not in PAGE_SIZES:
+        page_size = DEFAULT_PAGE_SIZE
+    return page_size
+
+DEFAULT_PAGE_NUMBER = 1
+
+def _page_number(request):
+    return int(request.GET.get('pageNumber') or str(DEFAULT_PAGE_NUMBER))
 
 def _post_bookmarks(request):
     try:
