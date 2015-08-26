@@ -395,8 +395,11 @@ function bookmarksQueryParamsAdaptor(params) {
 
 function bookmarksTableResponseHandler(res) {
   var res2 = {
-    total: res.data.meta.pagination.count,
-    rows: res.data.results
+    total: res.meta.pagination.count,
+    rows: res.data.map(function(resource) {
+      resource.attributes.id = resource.id;
+      return resource.attributes;
+    })
   };
   return res2;
 }
