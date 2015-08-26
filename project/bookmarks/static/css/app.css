@@ -1,3 +1,7 @@
+.toolbar .btn-group {
+  margin-right: 4px;
+}
+
 .bookmarks-table {
   table-layout: fixed;
 }

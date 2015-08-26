@@ -1,0 +1,424 @@
+var BookmarksPage = {
+  controller: function() {
+    // NOTE: toolbar_dom_id is constant so we use a plain string instead of m.prop().
+    this.toolbar_dom_id = 'toolbar1';
+    this.selectedRow = m.prop({});
+  },
+  view: function(ctrl) {
+    return [
+      m.component(AlertPanel),
+      m.component(Toolbar, { toolbar_dom_id: ctrl.toolbar_dom_id, selectedRow: ctrl.selectedRow }),
+      m.component(BookmarksTable, {
+        toolbar_dom_id: ctrl.toolbar_dom_id,
+        selectedRow: ctrl.selectedRow,
+        getBookmarksURL: API.getBookmarksURL
+      }),
+      m.component(AddBookmarkDialog),
+      m.component(DeleteBookmarkDialog)
+    ];
+  }
+};
+
+var AlertPanel = {
+  controller: function() {
+    var ctrl = this;
+    this.message = m.prop('');
+    this.visible = m.prop(false);
+    this.showSuccessFlashMessage = function(msg, data) {
+      ctrl.message(data.message);
+      ctrl.visible(true);
+      m.redraw();
+      setTimeout(function() {
+        ctrl.visible(false);
+        m.redraw();
+      }, 5000);
+    };
+    PubSub.subscribe('BookmarksTable.showSuccessFlashMessage', this.showSuccessFlashMessage);
+  },
+  view: function(ctrl) {
+    return m('', [
+      ctrl.visible() ?
+        m(".alert.alert-success[role='alert']", ctrl.message()) : ''
+    ]);
+  }
+};
+
+var Toolbar = {
+  controller: function(args) {
+    var ctrl = this;
+    this.selectedRow = args.selectedRow;
+    this.onClickAddButton = function() {
+      PubSub.publish('AddBookmarkDialog.show');
+    };
+    this.onClickDeleteButton = function() {
+      var row = ctrl.selectedRow();
+      PubSub.publish('DeleteBookmarkDialog.show', {
+        id: row.id,
+        url: row.url,
+        title: row.title
+      });
+    };
+  },
+  view: function(ctrl, args) {
+    var deleteButtonAttrs = { onclick: ctrl.onClickDeleteButton };
+    if (ctrl.selectedRow().id === undefined) {
+      deleteButtonAttrs['class'] = 'disabled';
+    }
+    return m(".toolbar", { id: args.toolbar_dom_id }, [
+      m(".btn-group",
+        m("button.btn.btn-default[data-toggle='modal']", { onclick: ctrl.onClickAddButton }, "追加")
+      ),
+      m(".btn-group",
+        m("button.btn.btn-default[data-toggle='modal']", deleteButtonAttrs, "削除")
+      )
+    ]);
+  }
+};
+
+var BookmarksTable = {
+  controller: function(args) {
+    var ctrl = this;
+    this.selectedRow = args.selectedRow;
+    this.updateSelectedRow = function(row) {
+      ctrl.selectedRow(row);
+      m.redraw();
+    };
+    this.configTable = function(elem, isInitialized, context) {
+      if (!isInitialized) {
+        ctrl.tableElem = elem;
+
+        function addSortOptions(options) {
+          var uri = new URI(),
+              paramsInURI = uri.query(true),
+              page = paramsInURI.page,
+              page_size = paramsInURI.page_size,
+              search_text = paramsInURI.search_text,
+              ordering = paramsInURI.ordering;
+          if (page) {
+            options.pageNumber = page;
+          }
+          if (page_size) {
+            options.pageSize = page_size;
+          }
+          if (search_text) {
+            options.searchText = search_text;
+          }
+          if (ordering) {
+            if (/^-/.test(ordering)) {
+              options.sortOrder = 'desc';
+              ordering = ordering.substr(1);
+            } else {
+              options.sortOrder = 'asc';
+            }
+            if (['id', 'url', 'title', 'bookmarked_at'].indexOf(ordering) !== -1) {
+              options.sortName = ordering;
+            }
+          }
+          return options;
+        }
+
+        $(ctrl.tableElem).bootstrapTable(addSortOptions({
+          onCheck: function() {
+            var row = $(ctrl.tableElem).bootstrapTable('getSelections')[0];
+            ctrl.updateSelectedRow(row);
+          }
+        }));
+      }
+    };
+
+    this.refresh = function() {
+      $(ctrl.tableElem).bootstrapTable('refresh');
+      ctrl.updateSelectedRow({});
+    };
+    PubSub.subscribe('BookmarksTable.refresh', this.refresh);
+  },
+  view: function(ctrl, args) {
+    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page'][data-query-params='bookmarksQueryParamsAdaptor'][data-response-handler='bookmarksTableResponseHandler']",
+        {
+          'data-url': args.getBookmarksURL,
+          'data-toolbar': '#' + args.toolbar_dom_id,
+          'data-page-list': '[10, 25, 50, 100]',
+          config: ctrl.configTable
+        }, [
+      m("colgroup", [
+        m("col.bookmarks-table-select-column"),
+        m("col.bookmarks-table-id-column"),
+        m("col.bookmarks-table-title-column"),
+        m("col.bookmarks-table-url-column"),
+        m("col.bookmarks-table-bookmarked-at-column")
+      ]),
+      m("thead", [
+        m("tr", [
+          m("th[data-field='state'][data-radio='true']"),
+          m("th[data-field='id'][data-sortable='true']", "ID"),
+          m("th[data-field='url'][data-formatter='urlFormatter'][data-sortable='true']", "URL"),
+          m("th[data-field='title'][data-sortable='true']", "タイトル"),
+          m("th[data-field='bookmarked_at'][data-formatter='datetimeFormatter'][data-sortable='true']", "作成日時")
+        ])
+      ])
+    ]);
+  }
+};
+
+var AddBookmarkDialog = {
+  controller: function() {
+    var ctrl = this;
+    this.validated = m.prop(false);
+    this.errorMessage = m.prop('');
+    this.errorData = m.prop({});
+    this.url = m.prop('');
+    this.title = m.prop('');
+    this.configDialog = function(elem, isInitialized, context) {
+      if (!isInitialized) {
+        ctrl.dialogElem = elem;
+      }
+    };
+    this.show = function() {
+      ctrl.errorMessage('');
+      ctrl.url('');
+      ctrl.title('');
+      m.redraw();
+      $(ctrl.dialogElem).modal('show');
+    };
+    this.hide = function() {
+      $(ctrl.dialogElem).modal('hide');
+    };
+    this.onClickAddButton = function() {
+      ctrl.validated(false);
+      API.addBookmark(ctrl.url(), ctrl.title())
+        .then(ctrl.hide)
+        .then(function() {
+          PubSub.publish('BookmarksTable.showSuccessFlashMessage', {message: 'ブックマークを登録しました'});
+          PubSub.publish('BookmarksTable.refresh');
+        })
+        .then(null, function(data) {
+          ctrl.validated(true);
+          ctrl.errorData(data.errors[0].data);
+          ctrl.errorMessage(data.errors[0].title);
+        });
+    };
+    PubSub.subscribe('AddBookmarkDialog.show', this.show);
+  },
+  view: function(ctrl) {
+    function errorMessagesForKey(key) {
+      if (ctrl.validated()) {
+        var errors = ctrl.errorData()[key];
+        if (errors) {
+          return m('li.list-unstyled', errors.map(function(error) {
+            return m('ul.help-block', error.message);
+          }));
+        }
+      }
+      return [];
+    }
+    function validationStatusClass(key) {
+      if (ctrl.validated()) {
+        return {'class': ctrl.errorData()[key] ? 'has-error' : 'has-success'};
+      } else {
+        return {};
+      }
+    }
+    return m(".modal.fade", { config: ctrl.configDialog }, [
+      m(".modal-dialog", [
+        m(".modal-content", [
+          m(".modal-header", [
+            m("button.close[aria-label='Close'][data-dismiss='modal'][type='button']", [
+              m("span[aria-hidden='true']", "×")
+            ]),
+            m("h4.modal-title", "ブックマークの登録")
+          ]),
+          m(".modal-body", [
+            m(".alerts-container", [
+              ctrl.errorMessage() !== '' ? m(".alert.alert-danger[role='alert']", ctrl.errorMessage()) : ''
+            ]),
+            m("form", [
+              m(".form-group", validationStatusClass('url'), [
+                m("label.control-label[for='addDialogURL']", "URL"),
+                m("input.form-control[type='text']",
+                  {onchange: m.withAttr('value', ctrl.url), value: ctrl.url()}),
+                errorMessagesForKey('url')
+              ]),
+              m(".form-group", validationStatusClass('title'), [
+                m("label.control-label[for='addDialogTitle']", "タイトル"),
+                m("input.form-control[type='text']",
+                  {onchange: m.withAttr('value', ctrl.title), value: ctrl.title()}),
+                errorMessagesForKey('title')
+              ])
+            ])
+          ]),
+          m(".modal-footer", [
+            m("button.btn.btn-default[data-dismiss='modal'][type='button']", "キャンセル"),
+            m("button.btn.btn-primary[type='button']", { onclick: ctrl.onClickAddButton }, "追加")
+          ])
+        ])
+      ])
+    ]);
+  }
+};
+
+var DeleteBookmarkDialog = {
+  controller: function() {
+    var ctrl = this;
+    this.errorMessage = m.prop('');
+    this.id = m.prop();
+    this.url = m.prop('');
+    this.title = m.prop('');
+    this.configDialog = function(elem, isInitialized, context) {
+      if (!isInitialized) {
+        ctrl.dialogElem = elem;
+      }
+    };
+    this.show = function(msg, data) {
+      ctrl.errorMessage('');
+      ctrl.id(data.id);
+      ctrl.url(data.url);
+      ctrl.title(data.title);
+      m.redraw();
+      $(ctrl.dialogElem).modal('show');
+    };
+    this.hide = function() {
+      $(ctrl.dialogElem).modal('hide');
+    };
+    this.onClickDeleteButton = function() {
+      API.deleteBookmark(ctrl.id())
+        .then(ctrl.hide)
+        .then(function() {
+          PubSub.publish('BookmarksTable.showSuccessFlashMessage', {message: 'ブックマークを削除しました'});
+          PubSub.publish('BookmarksTable.refresh');
+        })
+        .then(null, function(data) {
+          ctrl.errorMessage(data.errors[0].title);
+        });
+    };
+    PubSub.subscribe('DeleteBookmarkDialog.show', this.show);
+  },
+  view: function(ctrl) {
+    return m(".modal.fade", { config: ctrl.configDialog }, [
+      m(".modal-dialog", [
+        m(".modal-content", [
+          m(".modal-header", [
+            m("button.close[aria-label='Close'][data-dismiss='modal'][type='button']", [m("span[aria-hidden='true']", "×")]),
+            m("h4.modal-title", "ブックマークを削除しますか？")
+          ]),
+          m(".modal-body", [
+            m(".alerts-container", [
+              ctrl.errorMessage() !== '' ? m(".alert.alert-danger[role='alert']", ctrl.errorMessage()) : ''
+            ]),
+            m("dl", [
+              m("dt", "URL"),
+              m("dd", ctrl.url()),
+              m("dt", "タイトル"),
+              m("dd", ctrl.title())
+            ])
+          ]),
+          m(".modal-footer", [
+            m("button.btn.btn-default[data-dismiss='modal'][type='button']", "キャンセル"),
+            m("button.btn.btn-primary[type='button']", { onclick: ctrl.onClickDeleteButton }, "削除")
+          ])
+        ])
+      ])
+    ]);
+  }
+};
+
+var API = {
+  getBookmarksURL: '/api/v2/bookmarks/',
+  addBookmark: function(url, title) {
+    var apiURL = '/api/v1/bookmarks/',
+        data = {
+          url: url,
+          title: title
+        },
+        xhrConfig = function(xhr) {
+          xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
+          xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        };
+    return m.request({
+      method: 'POST',
+      url: apiURL,
+      config: xhrConfig,
+      data: data,
+      serialize: $.param,
+      unwrapError: API._unwrapError
+    });
+  },
+  deleteBookmark: function(id) {
+    var apiURL = '/api/v1/bookmarks/' + id,
+        xhrConfig = function(xhr) {
+          xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
+        };
+    return m.request({
+      method: 'DELETE',
+      url: apiURL,
+      config: xhrConfig,
+      unwrapError: API._unwrapError
+    });
+  },
+  _unwrapError: function(data, xhr) {
+    if (data.errors) {
+      return data;
+    } else {
+      return {
+        errors: [{
+          title: xhr.statusText
+        }]
+      };
+    }
+  }
+};
+
+m.mount(document.getElementById('componentContainer'), BookmarksPage);
+
+function saveBrowserHistory(params) {
+  var uri = new URI(),
+      newURL;
+  uri.query(params);
+  newURL = '' + uri;
+  if (newURL !== window.location.href) {
+    window.history.pushState(undefined, document.title, '' + uri);
+  }
+}
+
+function bookmarksQueryParamsAdaptor(params) {
+  console.log('bookmarksQueryParamsAdaptor. params=', params);
+  var newParams = {
+    page: params.pageNumber,
+    page_size: params.pageSize,
+    search_text: params.searchText
+  };
+  if (params.sortName) {
+    newParams.ordering = params.sortOrder === 'asc' ? params.sortName : '-' + params.sortName;
+  }
+  saveBrowserHistory(newParams);
+  return newParams;
+}
+
+function bookmarksTableResponseHandler(res) {
+  var res2 = {
+    total: res.meta && res.meta.pagination && res.meta.pagination.count || res.data.length,
+    rows: res.data.map(function(resource) {
+      resource.attributes.id = resource.id;
+      return resource.attributes;
+    })
+  };
+  return res2;
+}
+
+function urlFormatter(value) {
+  if (/^https?:\/\//.test(value)) {
+    return '<a href="' + value + '" target="_blank">' + value + '</a>';
+  } else if (/^smb:\/\//.test(value)) {
+    return value.substr('smb:'.length).replace(/\//g, '\\');
+  } else {
+    return value;
+  }
+}
+
+function datetimeFormatter(value) {
+  var dt = new Date(Date.parse(value));
+  return dt.getFullYear() + '/' + format2digit(dt.getMonth() + 1) + '/' + format2digit(dt.getDay()) + ' ' +
+    format2digit(dt.getHours()) + ':' + format2digit(dt.getMinutes()) + ':' + format2digit(dt.getSeconds());
+}
+function format2digit(value) {
+  return value < 10 ? '0' + value : '' + value;
+}

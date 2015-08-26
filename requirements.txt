@@ -1,2 +1,5 @@
 Django==1.8.4
+djangorestframework==3.2.3
+djangorestframework-jsonapi==2.0.0a2
+inflection==0.3.1
 psycopg2==2.6.1
