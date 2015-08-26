@@ -395,7 +395,7 @@ function bookmarksQueryParamsAdaptor(params) {
 
 function bookmarksTableResponseHandler(res) {
   var res2 = {
-    total: res.meta.pagination.count,
+    total: res.meta && res.meta.pagination && res.meta.pagination.count || res.data.length,
     rows: res.data.map(function(resource) {
       resource.attributes.id = resource.id;
       return resource.attributes;

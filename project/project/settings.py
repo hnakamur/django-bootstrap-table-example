@@ -154,7 +154,8 @@ REST_FRAMEWORK = {
     'SEARCH_PARAM': 'search_text',
     'MAX_PAGINATE_BY': 100,
     'DEFAULT_PAGINATION_CLASS':
-        'rest_framework_json_api.pagination.PageNumberPagination',
+        'apiv2.pagination.EmptyToLastPageNumberPagination',
+        #'rest_framework_json_api.pagination.PageNumberPagination',
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework_json_api.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
