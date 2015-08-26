@@ -8,7 +8,11 @@ var BookmarksPage = {
     return [
       m.component(AlertPanel),
       m.component(Toolbar, { toolbar_dom_id: ctrl.toolbar_dom_id, selectedRow: ctrl.selectedRow }),
-      m.component(BookmarksTable, { toolbar_dom_id: ctrl.toolbar_dom_id, selectedRow: ctrl.selectedRow }),
+      m.component(BookmarksTable, {
+        toolbar_dom_id: ctrl.toolbar_dom_id,
+        selectedRow: ctrl.selectedRow,
+        getBookmarksURL: API.getBookmarksURL
+      }),
       m.component(AddBookmarkDialog),
       m.component(DeleteBookmarkDialog)
     ];
@@ -125,8 +129,9 @@ var BookmarksTable = {
     PubSub.subscribe('BookmarksTable.deleteSelectedRow', this.deleteSelectedRow);
   },
   view: function(ctrl, args) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-url='/api/v1/bookmarks/']",
+    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-query-params='saveBrowserHistory'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table']",
         {
+          'data-url': args.getBookmarksURL,
           'data-toolbar': '#' + args.toolbar_dom_id,
           'data-page-list': '[10, 25, 50, 100]',
           config: ctrl.configTable
@@ -288,6 +293,7 @@ var DeleteBookmarkDialog = {
 };
 
 var API = {
+  getBookmarksURL: '/api/v1/bookmarks/',
   addBookmark: function(url, title) {
     var apiURL = '/api/v1/bookmarks/',
         data = {
