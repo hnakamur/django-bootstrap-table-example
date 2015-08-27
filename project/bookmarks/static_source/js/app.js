@@ -127,6 +127,36 @@ var BookmarksTable = {
         }
 
         $(ctrl.tableElem).bootstrapTable(addSortOptions({
+          columns: [
+            {
+              field: 'state',
+              radio: true
+            },
+            {
+              title: 'ID',
+              field: 'id',
+              sortable: true
+            },
+            {
+              title: 'URL',
+              field: 'url',
+              sortable: true,
+              formatter: bookmarksTableURLFormatter
+            },
+            {
+              title: 'タイトル',
+              field: 'title',
+              sortable: true
+            },
+            {
+              title: '作成日時',
+              field: 'bookmarked_at',
+              sortable: true,
+              formatter: bookmarksTableDateTimeFormatter
+            }
+          ],
+          queryParams: bookmarksTableQueryParamsAdaptor,
+          responseHandler: bookmarksTableResponseHandler,
           onCheck: function() {
             var row = $(ctrl.tableElem).bootstrapTable('getSelections')[0];
             ctrl.updateSelectedRow(row);
@@ -142,7 +172,7 @@ var BookmarksTable = {
     PubSub.subscribe('BookmarksTable.refresh', this.refresh);
   },
   view: function(ctrl, args) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page'][data-query-params='bookmarksTableQueryParamsAdaptor'][data-response-handler='bookmarksTableResponseHandler']",
+    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page']",
         {
           'data-url': args.getBookmarksURL,
           'data-toolbar': '#' + args.toolbar_dom_id,
@@ -155,15 +185,6 @@ var BookmarksTable = {
         m("col.bookmarks-table-title-column"),
         m("col.bookmarks-table-url-column"),
         m("col.bookmarks-table-bookmarked-at-column")
-      ]),
-      m("thead", [
-        m("tr", [
-          m("th[data-field='state'][data-radio='true']"),
-          m("th[data-field='id'][data-sortable='true']", "ID"),
-          m("th[data-field='url'][data-formatter='bookmarksTableURLFormatter'][data-sortable='true']", "URL"),
-          m("th[data-field='title'][data-sortable='true']", "タイトル"),
-          m("th[data-field='bookmarked_at'][data-formatter='bookmarksTableDateTimeFormatter'][data-sortable='true']", "作成日時")
-        ])
       ])
     ]);
   }
@@ -449,11 +470,4 @@ function format2digit(value) {
   return value < 10 ? '0' + value : '' + value;
 }
 
-// NOTE: With browserify, you need to export these functions globally for bootstrap-table to find these.
-window.bookmarksTableQueryParamsAdaptor = bookmarksTableQueryParamsAdaptor;
-window.bookmarksTableResponseHandler = bookmarksTableResponseHandler;
-window.bookmarksTableURLFormatter = bookmarksTableURLFormatter;
-window.bookmarksTableDateTimeFormatter = bookmarksTableDateTimeFormatter;
-
-// NOTE: You must export above functions before mount
 m.mount(document.getElementById('componentContainer'), BookmarksPage);
