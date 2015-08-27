@@ -173,11 +173,19 @@ var AddBookmarkDialog = {
         ctrl.dialogElem = elem;
       }
     };
+    this.configURLInput = function(elem, isInitialized, context) {
+      if (!isInitialized) {
+        ctrl.urlInputElem = elem;
+      }
+    };
     this.show = function() {
       ctrl.errorMessage('');
       ctrl.url('');
       ctrl.title('');
       m.redraw();
+      $(ctrl.dialogElem).one('shown.bs.modal', function () {
+          $(ctrl.urlInputElem).focus()
+      })
       $(ctrl.dialogElem).modal('show');
     };
     this.hide = function() {
@@ -235,7 +243,12 @@ var AddBookmarkDialog = {
               m(".form-group", validationStatusClass('url'), [
                 m("label.control-label[for='addDialogURL']", "URL"),
                 m("input.form-control[type='text']",
-                  {onchange: m.withAttr('value', ctrl.url), value: ctrl.url()}),
+                  {
+                    config: ctrl.configURLInput,
+                    onchange: m.withAttr('value', ctrl.url),
+                    value: ctrl.url()
+                  }
+                ),
                 errorMessagesForKey('url')
               ]),
               m(".form-group", validationStatusClass('title'), [
