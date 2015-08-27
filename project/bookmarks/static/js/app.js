@@ -349,9 +349,10 @@ var API = {
     });
   },
   deleteBookmark: function(id) {
-    var apiURL = '/api/v1/bookmarks/' + id,
+    var apiURL = '/api/v2/bookmarks/' + id,
         xhrConfig = function(xhr) {
           xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
+          xhr.setRequestHeader('Accept', 'application/vnd.api+json');
         };
     return m.request({
       method: 'DELETE',
