@@ -1,3 +1,12 @@
+// NOTE: With browserify, you need to export jquery globally for plugins to find it
+window.$ = window.jQuery = require('jquery');
+require('bootstrap');
+require('bootstrap-table');
+require('bootstrap-table-ja');
+var m = require('mithril');
+var PubSub = require('pubsub-js');
+var URI = require('URIjs');
+
 var BookmarksPage = {
   controller: function() {
     // NOTE: toolbar_dom_id is constant so we use a plain string instead of m.prop().
@@ -133,7 +142,7 @@ var BookmarksTable = {
     PubSub.subscribe('BookmarksTable.refresh', this.refresh);
   },
   view: function(ctrl, args) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page'][data-query-params='bookmarksQueryParamsAdaptor'][data-response-handler='bookmarksTableResponseHandler']",
+    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page'][data-query-params='bookmarksTableQueryParamsAdaptor'][data-response-handler='bookmarksTableResponseHandler']",
         {
           'data-url': args.getBookmarksURL,
           'data-toolbar': '#' + args.toolbar_dom_id,
@@ -151,9 +160,9 @@ var BookmarksTable = {
         m("tr", [
           m("th[data-field='state'][data-radio='true']"),
           m("th[data-field='id'][data-sortable='true']", "ID"),
-          m("th[data-field='url'][data-formatter='urlFormatter'][data-sortable='true']", "URL"),
+          m("th[data-field='url'][data-formatter='bookmarksTableURLFormatter'][data-sortable='true']", "URL"),
           m("th[data-field='title'][data-sortable='true']", "タイトル"),
-          m("th[data-field='bookmarked_at'][data-formatter='datetimeFormatter'][data-sortable='true']", "作成日時")
+          m("th[data-field='bookmarked_at'][data-formatter='bookmarksTableDateTimeFormatter'][data-sortable='true']", "作成日時")
         ])
       ])
     ]);
@@ -399,7 +408,7 @@ function saveBrowserHistory(params) {
   }
 }
 
-function bookmarksQueryParamsAdaptor(params) {
+function bookmarksTableQueryParamsAdaptor(params) {
   var newParams = {
     page: params.pageNumber,
     page_size: params.pageSize,
@@ -423,7 +432,7 @@ function bookmarksTableResponseHandler(res) {
   return res2;
 }
 
-function urlFormatter(value) {
+function bookmarksTableURLFormatter(value) {
   if (/^https?:\/\//.test(value)) {
     return '<a href="' + value + '" target="_blank">' + value + '</a>';
   } else if (/^smb:\/\//.test(value)) {
@@ -433,7 +442,7 @@ function urlFormatter(value) {
   }
 }
 
-function datetimeFormatter(value) {
+function bookmarksTableDateTimeFormatter(value) {
   var dt = new Date(Date.parse(value));
   return dt.getFullYear() + '/' + format2digit(dt.getMonth() + 1) + '/' + format2digit(dt.getDay()) + ' ' +
     format2digit(dt.getHours()) + ':' + format2digit(dt.getMinutes()) + ':' + format2digit(dt.getSeconds());
@@ -441,3 +450,9 @@ function datetimeFormatter(value) {
 function format2digit(value) {
   return value < 10 ? '0' + value : '' + value;
 }
+
+// NOTE: With browserify, you need to export these functions globally for bootstrap-table to find these.
+window.bookmarksTableQueryParamsAdaptor = bookmarksTableQueryParamsAdaptor;
+window.bookmarksTableResponseHandler = bookmarksTableResponseHandler;
+window.bookmarksTableURLFormatter = bookmarksTableURLFormatter;
+window.bookmarksTableDateTimeFormatter = bookmarksTableDateTimeFormatter;

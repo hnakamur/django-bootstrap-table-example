@@ -1,6 +1,8 @@
 .envrc
 __pycache__
+project/bookmarks/static/js/app.js
 db.sqlite3
 *.log
-/bower_components
-/venv
+/build/
+/node_modules/
+/venv/
