@@ -400,7 +400,6 @@ function saveBrowserHistory(params) {
 }
 
 function bookmarksQueryParamsAdaptor(params) {
-  console.log('bookmarksQueryParamsAdaptor. params=', params);
   var newParams = {
     page: params.pageNumber,
     page_size: params.pageSize,
