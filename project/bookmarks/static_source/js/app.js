@@ -396,8 +396,6 @@ var API = {
   }
 };
 
-m.mount(document.getElementById('componentContainer'), BookmarksPage);
-
 function saveBrowserHistory(params) {
   var uri = new URI(),
       newURL;
@@ -456,3 +454,6 @@ window.bookmarksTableQueryParamsAdaptor = bookmarksTableQueryParamsAdaptor;
 window.bookmarksTableResponseHandler = bookmarksTableResponseHandler;
 window.bookmarksTableURLFormatter = bookmarksTableURLFormatter;
 window.bookmarksTableDateTimeFormatter = bookmarksTableDateTimeFormatter;
+
+// NOTE: You must export above functions before mount
+m.mount(document.getElementById('componentContainer'), BookmarksPage);
