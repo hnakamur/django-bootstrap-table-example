@@ -1,9 +1,20 @@
 from django.conf.urls import url
 
-from . import views
+from .viewsets import BookmarkViewSet
+
+bookmark_list = BookmarkViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+
+bookmark_detail = BookmarkViewSet.as_view({
+    'get': 'retrieve',
+    'patch': 'update',
+    'delete': 'destroy'
+})
 
 urlpatterns = [
-    url(r'^bookmarks/$', views.BookmarkListCreateAPIView.as_view(), name='bookmarks'),
-    url(r'^bookmarks/(?P<bookmark_id>\d+)/$', views.BookmarkRetrieveUpdateDestroyAPIView.as_view(), name='bookmark'),
+    url(r'^bookmarks/$', bookmark_list, name='bookmarks'),
+    url(r'^bookmarks/(?P<pk>[0-9]+)/$', bookmark_detail, name='bookmark'),
 ]
 

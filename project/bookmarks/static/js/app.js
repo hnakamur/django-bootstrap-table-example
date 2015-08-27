@@ -324,21 +324,27 @@ var DeleteBookmarkDialog = {
 var API = {
   getBookmarksURL: '/api/v2/bookmarks/',
   addBookmark: function(url, title) {
-    var apiURL = '/api/v1/bookmarks/',
+    var apiURL = '/api/v2/bookmarks/',
         data = {
-          url: url,
-          title: title
+          data: {
+            type: 'bookmark',
+            attributes: {
+              url: url,
+              title: title
+            }
+          }
         },
         xhrConfig = function(xhr) {
           xhr.setRequestHeader('X-CSRFToken', $.cookie('csrftoken'));
-          xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+          //xhr.setRequestHeader('Content-Type', 'application/vnd.api+json');
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.setRequestHeader('Accept', 'application/vnd.api+json');
         };
     return m.request({
       method: 'POST',
       url: apiURL,
       config: xhrConfig,
       data: data,
-      serialize: $.param,
       unwrapError: API._unwrapError
     });
   },
