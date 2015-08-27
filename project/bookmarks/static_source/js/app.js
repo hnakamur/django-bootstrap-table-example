@@ -127,6 +127,9 @@ var BookmarksTable = {
         }
 
         $(ctrl.tableElem).bootstrapTable(addSortOptions({
+          url: args.getBookmarksURL,
+          toolbar: '#' + args.toolbar_dom_id,
+          pageList: [10, 25, 50, 100],
           columns: [
             {
               field: 'state',
@@ -155,8 +158,16 @@ var BookmarksTable = {
               formatter: bookmarksTableDateTimeFormatter
             }
           ],
+          queryParamsType: 'page',
           queryParams: bookmarksTableQueryParamsAdaptor,
           responseHandler: bookmarksTableResponseHandler,
+          pagination: true,
+          sidePagination: 'server',
+          clickToSelect: true,
+          striped: true,
+          search: true,
+          showColumns: true,
+          showToggle: true,
           onCheck: function() {
             var row = $(ctrl.tableElem).bootstrapTable('getSelections')[0];
             ctrl.updateSelectedRow(row);
@@ -172,13 +183,7 @@ var BookmarksTable = {
     PubSub.subscribe('BookmarksTable.refresh', this.refresh);
   },
   view: function(ctrl, args) {
-    return m("table.bookmarks-table[data-click-to-select='true'][data-pagination='true'][data-search='true'][data-show-columns='true'][data-show-toggle='true'][data-side-pagination='server'][data-striped='true'][data-toggle='table'][data-query-params-type='page']",
-        {
-          'data-url': args.getBookmarksURL,
-          'data-toolbar': '#' + args.toolbar_dom_id,
-          'data-page-list': '[10, 25, 50, 100]',
-          config: ctrl.configTable
-        }, [
+    return m("table.bookmarks-table", { config: ctrl.configTable }, [
       m("colgroup", [
         m("col.bookmarks-table-select-column"),
         m("col.bookmarks-table-id-column"),
