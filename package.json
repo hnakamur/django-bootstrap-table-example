@@ -15,6 +15,7 @@
   "devDependencies": {
     "browserify": "^11.0.1",
     "gulp": "^3.9.0",
+    "gulp-util": "^3.0.6",
     "licensify": "^1.4.0"
   },
   "browser": {
