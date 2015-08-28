@@ -290,27 +290,31 @@ var AddBookmarkDialog = {
         })
         .then(null, function(data) {
           ctrl.validated(true);
-          ctrl.errorData(data.errors[0].data);
-          ctrl.errorMessage(data.errors[0].title);
+          ctrl.errorData(data.errors);
+          ctrl.errorMessage('ブックマーク登録に失敗しました');
         });
     };
     PubSub.subscribe('AddBookmarkDialog.show', this.show);
   },
   view: function(ctrl) {
-    function errorMessagesForKey(key) {
+    function errorMessageForKey(key) {
       if (ctrl.validated()) {
-        var errors = ctrl.errorData()[key];
-        if (errors) {
-          return m('li.list-unstyled', errors.map(function(error) {
-            return m('ul.help-block', error.message);
-          }));
+        var errors = ctrl.errorData(),
+            r = new RegExp('/' + key + '$');
+        for (var i = 0; i < errors.length; i++) {
+          var error = errors[i];
+          if (r.test(error.source.pointer)) {
+            return m('ul.list-unstyled.help-block',
+              m('li', error.detail)
+            );
+          }
         }
       }
-      return [];
+      return null;
     }
     function validationStatusClass(key) {
       if (ctrl.validated()) {
-        return {'class': ctrl.errorData()[key] ? 'has-error' : 'has-success'};
+        return {'class': errorMessageForKey(key) !== null ? 'has-error' : 'has-success'};
       } else {
         return {};
       }
@@ -331,20 +335,20 @@ var AddBookmarkDialog = {
             m("form", [
               m(".form-group", validationStatusClass('url'), [
                 m("label.control-label[for='addDialogURL']", "URL"),
-                m("input.form-control[type='text']",
-                  {
-                    config: ctrl.configURLInput,
-                    onchange: m.withAttr('value', ctrl.url),
-                    value: ctrl.url()
-                  }
-                ),
-                errorMessagesForKey('url')
+                m("input.form-control[type='text']", {
+                  config: ctrl.configURLInput,
+                  onchange: m.withAttr('value', ctrl.url),
+                  value: ctrl.url()
+                }),
+                errorMessageForKey('url')
               ]),
               m(".form-group", validationStatusClass('title'), [
                 m("label.control-label[for='addDialogTitle']", "タイトル"),
-                m("input.form-control[type='text']",
-                  {onchange: m.withAttr('value', ctrl.title), value: ctrl.title()}),
-                errorMessagesForKey('title')
+                m("input.form-control[type='text']", {
+                  onchange: m.withAttr('value', ctrl.title),
+                  value: ctrl.title()
+                }),
+                errorMessageForKey('title')
               ])
             ])
           ]),
