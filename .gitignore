@@ -1,8 +1,12 @@
 .envrc
 __pycache__
-project/bookmarks/static/js/app.js
 db.sqlite3
 *.log
+project/bookmarks/static/css/bootstrap.min.css
+project/bookmarks/static/css/bootstrap-theme.min.css
+project/bookmarks/static/css/bootstrap-table.min.css
+project/bookmarks/static/fonts/
+project/bookmarks/static/js/app.js
 /build/
 /node_modules/
 /venv/
