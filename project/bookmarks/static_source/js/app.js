@@ -1,5 +1,6 @@
 // NOTE: With browserify, you need to export jquery globally for plugins to find it
 window.$ = window.jQuery = require('jquery');
+require('jquery.cookie');
 require('bootstrap');
 require('bootstrap-table');
 require('bootstrap-table-ja');
