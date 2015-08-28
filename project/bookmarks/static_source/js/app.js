@@ -268,6 +268,7 @@ var AddBookmarkDialog = {
       }
     };
     this.show = function() {
+      ctrl.validated(false);
       ctrl.errorMessage('');
       ctrl.url('');
       ctrl.title('');
