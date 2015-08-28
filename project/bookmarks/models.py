@@ -1,8 +1,10 @@
 from django.core.urlresolvers import reverse
 from django.db import models
 
+from . import fields
+
 class Bookmark(models.Model):
-    url = models.TextField(unique=True)
+    url = fields.URLTextField(unique=True)
     title = models.TextField()
     bookmarked_at = models.DateTimeField(auto_now_add=True)
 
